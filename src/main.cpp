@@ -8,11 +8,6 @@
 #include <cstring>
 #include <thread>
 #include <fstream>
-// #include <openssl/rand.h>
-// #include <openssl/evp.h>
-// #include <openssl/aes.h>
-// #include <openssl/err.h>
-// #include <openssl/sha.h>
 #include <cstdlib>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -22,29 +17,37 @@
 
 void handleSystemCallError(std::string errorMsg);
 int createClientSocket(const std::string &serverIP, int serverPort);
-void receiveMessages(int clientSocket, std::vector<std::string>& chatMessages);
-void connectToServerThread(const std::string &IP, int port, std::vector<std::string> &chatMessages, int &clientSocket);
+void receiveMessages(int clientSocket);
+void connectToServerThread();
+void AddMessage(const char *message);
+void connectToServer();
+void sendMessage();
+
+
 const int bufferSize = 10240;
 std::mutex chatMutex;
+std::vector<std::string> chatMessages; // Store chat messages
+char inputBuffer[1024] = "";           // Buffer for input text
+char IP[20] = "";
+char Port[10] = "";
+char User[50] = "";
+char Password[1000] = "";
 
-void AddMessage(std::vector<std::string> &messages, const char *message)
-{
-    std::lock_guard<std::mutex> lock(chatMutex);
-    messages.push_back(message);
-}
+bool focusInput = false; // Flag to set keyboard focus
+bool isConnected = false;
+char buffer[bufferSize];
+char outMessage[bufferSize];
+int clientSocket;
 
 // Main code
 int main(int, char **)
 {
-    char buffer[bufferSize];
-    char outMessage[bufferSize];
-    int clientSocket;
 
     if (!glfwInit())
         return 1;
 
     // Create a GLFW window
-    GLFWwindow *window = glfwCreateWindow(1280, 720, "ImGui Example", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(1280, 720, "Freia Thiwi", NULL, NULL);
     if (!window)
     {
         glfwTerminate();
@@ -67,16 +70,6 @@ int main(int, char **)
     {
         return 1;
     }
-
-    std::vector<std::string> chatMessages; // Store chat messages
-    char inputBuffer[1024] = "";           // Buffer for input text
-    char IP[20] = "";
-    char Port[10] = "";
-    char User[50] = "";
-    char Password[1000] = "";
-
-    bool focusInput = false; // Flag to set keyboard focus
-    bool isConnected = false;
 
     while (!glfwWindowShouldClose(window))
     {
@@ -108,14 +101,7 @@ int main(int, char **)
             {
                 if (ImGui::Button("Connect"))
                 {
-                    int PortNumber = std::atoi(Port);
-                    std::string ipString = std::string(IP);             // Convert char array to std::string
-                    std::string passwordString = std::string(Password); // Convert password to std::string
-
-                    // Pass all the required arguments including passwordString
-                    std::thread connectionThread(connectToServerThread, ipString, PortNumber, std::ref(chatMessages), std::ref(clientSocket));
-                    connectionThread.detach(); // Detach the thread
-                    isConnected = true;
+                    connectToServer();
                 }
             }
 
@@ -153,18 +139,8 @@ int main(int, char **)
                 if (strlen(inputBuffer) > 0)
                 {
                     // Add the input text as a new chat message
-                    AddMessage(chatMessages, inputBuffer);
-                    std::string userMessage;
-                    std::string userString = std::string(User);
-                    std::string passwordString = std::string(Password);
-
-                    std::string messageContent = std::string(inputBuffer);
-                    userMessage = userString + ": " + messageContent + "\n";
-
-                    send(clientSocket, userMessage.data(), userMessage.size(), 0);
-
-                    // Clear the input buffer
-                    inputBuffer[0] = '\0';
+                    AddMessage(inputBuffer);
+                    sendMessage();
                     focusInput = true;
                 }
             }
@@ -186,8 +162,6 @@ int main(int, char **)
         glfwSwapBuffers(window);
     }
 
-    //first.join();
-
     // Cleanup
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
@@ -202,7 +176,7 @@ int main(int, char **)
 void handleSystemCallError(std::string errorMsg)
 {
     std::cout << errorMsg << ", errno: " << errno << "\n";
-    exit(EXIT_FAILURE);
+    //exit(EXIT_FAILURE);
 }
 
 // creates a client socket
@@ -217,6 +191,7 @@ int createClientSocket(const std::string &serverIP, int serverPort)
     // Set up the server address structure
     sockaddr_in serverAddress;
     serverAddress.sin_family = AF_INET;
+
     serverAddress.sin_port = htons(serverPort);
 
     // check IP validity by converting it to binary
@@ -238,7 +213,7 @@ int createClientSocket(const std::string &serverIP, int serverPort)
     return clientSocket;
 }
 
-void receiveMessages(int clientSocket, std::vector<std::string>& chatMessages)
+void receiveMessages(int clientSocket)
 {
     char buffer[10240];
 
@@ -246,20 +221,46 @@ void receiveMessages(int clientSocket, std::vector<std::string>& chatMessages)
         int bytesRead = recv(clientSocket, buffer, sizeof(buffer) - 1, 0);
 
         if (bytesRead <= 0) {
-            AddMessage(chatMessages, "[Disconnected from server]");
+            AddMessage("[Disconnected from server]");
             close(clientSocket);
             break;
         }
 
         buffer[bytesRead] = '\0';
-        AddMessage(chatMessages, buffer);
+        AddMessage(buffer);
     }
 }
 
-void connectToServerThread(const std::string &IP, int port, std::vector<std::string> &chatMessages, int &clientSocket)
+void AddMessage(const char *message)
 {
-    clientSocket = createClientSocket(IP, port);
+    std::lock_guard<std::mutex> lock(chatMutex);
+    chatMessages.push_back(message);
+}
+
+void connectToServer()
+{
+    int PortNumber = std::atoi(Port);
+    std::string ipString = std::string(IP);
+
+    clientSocket = createClientSocket(ipString, PortNumber);
 
     // Start background receive loop
-    std::thread(receiveMessages, clientSocket, std::ref(chatMessages)).detach();
+    std::thread(receiveMessages, clientSocket).detach();
+    isConnected = true;
+}
+
+
+void sendMessage()
+{
+    std::string userMessage;
+    std::string userString = std::string(User);
+    std::string passwordString = std::string(Password);
+
+    std::string messageContent = std::string(inputBuffer);
+    userMessage = userString + ": " + messageContent + "\n";
+
+    send(clientSocket, userMessage.data(), userMessage.size(), 0);
+
+    // Clear the input buffer
+    inputBuffer[0] = '\0';
 }

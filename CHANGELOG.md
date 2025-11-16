@@ -3,6 +3,12 @@ All notable changes to **Freia Thiwi Client** will be documented here.
 
 ---
 
+## [0.1.1] - 2025-11-16
+### Changed
+- Seperated the UI logic from the networking logic in preperation of seperate class creation.
+
+---
+
 ## [0.1.0] - 2025-11-16
 ### Added
 - Initial project structure with CMake build system
