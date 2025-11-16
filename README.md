@@ -59,12 +59,12 @@ Load:
 
 Resource Usage:
 
-Metric	            Result
-CPU	                ~0.0%
-RAM	                ~0.2% (~4 MB)
-File Descriptors	3
-Stability	        No packet loss, no stalls
-Throughput          Instant Message delivery
+- Metric:	            Result
+- CPU:	                ~0.0%
+- RAM:	                ~0.2% (~4 MB)
+- File Descriptors: 	3
+- Stability:            No packet loss, no stalls
+- Throughput:           Instant Message delivery
 
 Verdict
 Ultra-lightweight. Near-zero overhead. Runs flawlessly on 15-year-old hardware.
