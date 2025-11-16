@@ -6,7 +6,7 @@ Designed for oppressed, restricted, and privacy-seeking users who deserve safe c
 
 ---
 
-## 🔒 Core Philosophy
+## Core Philosophy
 
 > *“The server serves the users.  
 > The messages belong to the users.”*
@@ -22,7 +22,7 @@ This repo is the client side of the Freia Thiwi Project, the server is not publi
 
 ---
 
-## ✨ Features (planned / in progress)
+## Features (planned / in progress)
 
 Client side encryption with a shared private password for symetrical encryption.
 Server encryption to hide user names and protocols.
@@ -34,7 +34,7 @@ and much more to follow.
 
 ---
 
-## 🧠 Architecture Overview
+## Architecture Overview
 
 - The server routes messages but cannot decrypt them.
 - Clients encrypt/decrypt messages using a shared secret password.
@@ -42,7 +42,7 @@ and much more to follow.
 
 ---
 
-## 🚀 Performance Testing (Server Benchmark)
+## Performance Testing (Server Benchmark)
 
 Freia Thiwi has been benchmarked on extremely low-end hardware with outstanding results.
 
@@ -81,7 +81,7 @@ This makes it ideal for self-hosted, low-power, and always-on deployments.
 
 ---
 
-## 🏗️ Build Instructions (Linux)
+## Build Instructions (Linux)
 
 ```bash
 git clone <repo>
