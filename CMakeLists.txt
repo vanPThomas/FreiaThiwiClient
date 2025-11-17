@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(FreiaThiwiClient VERSION 0.1.2 LANGUAGES CXX)
+project(FreiaThiwiClient VERSION 0.1.3 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # ---- version -------------------------------------------------
 set(PROJECT_VERSION_MAJOR 0)
 set(PROJECT_VERSION_MINOR 1)
-set(PROJECT_VERSION_PATCH 2)
+set(PROJECT_VERSION_PATCH 3)
 set(PROJECT_VERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
 
 add_compile_definitions(PROJECT_VERSION="${PROJECT_VERSION}")
@@ -17,6 +17,7 @@ add_compile_definitions(PROJECT_VERSION="${PROJECT_VERSION}")
 add_executable(freia-thiwi-client
     src/main.cpp
     src/ClientConnect.cpp
+    src/FreiaUI.cpp
 
     # ImGui core
     imgui/imgui.cpp

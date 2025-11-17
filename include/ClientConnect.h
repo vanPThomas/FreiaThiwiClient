@@ -10,6 +10,7 @@
 class ClientConnect
 {
 public:
+    ClientConnect();
     ClientConnect(const char* ip, const char* port, const char* user, const char* password);
     ~ClientConnect();
 
@@ -19,6 +20,8 @@ public:
 
     const std::vector<std::string>& getMessages() const;
     bool isConnectedToServer() const { return isConnected; }
+    void configure(const char* ip, const char* port, const char* user, const char* password);
+
 
 private:
     void handleSystemCallError(const std::string& errorMsg);
@@ -26,7 +29,6 @@ private:
     void receiveMessages();
     void addMessage(const std::string& message);
 
-private:
     int clientSocket = -1;
     bool isConnected = false;
 

@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to **Freia Thiwi Client** will be documented here.
 
+## [0.1.3] - 2025-11-17
+### Added
+- UI class
+- Moved all ui logic to FreiaUI class
+- Clean seperation of the connection class and the UI class
+
 ---
 
 ## [0.1.2] - 2025-11-17

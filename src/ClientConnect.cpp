@@ -1,6 +1,7 @@
 #include "ClientConnect.h"
 #include <iostream>
 
+ClientConnect::ClientConnect(){}
 ClientConnect::ClientConnect(const char* ip,
                              const char* port,
                              const char* user,
@@ -107,4 +108,12 @@ const std::vector<std::string>& ClientConnect::getMessages() const
 {
     std::lock_guard<std::mutex> lock(chatMutex);
     return chatMessages;
+}
+
+void ClientConnect::configure(const char* ip, const char* port, const char* user, const char* password)
+{
+    this->ip = ip;
+    this->port = std::atoi(port);
+    this->user = user;
+    this->password = password;
 }
