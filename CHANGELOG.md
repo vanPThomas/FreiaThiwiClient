@@ -3,6 +3,14 @@ All notable changes to **Freia Thiwi Client** will be documented here.
 
 ---
 
+## [0.1.2] - 2025-11-17
+### Added
+- Client class
+- seperated UI from connectivity logic.
+- cleaned up connectivity code
+
+---
+
 ## [0.1.1] - 2025-11-16
 ### Changed
 - Seperated the UI logic from the networking logic in preperation of seperate class creation.

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(FreiaThiwiClient VERSION 0.1.1 LANGUAGES CXX)
+project(FreiaThiwiClient VERSION 0.1.2 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # ---- version -------------------------------------------------
 set(PROJECT_VERSION_MAJOR 0)
 set(PROJECT_VERSION_MINOR 1)
-set(PROJECT_VERSION_PATCH 1)
+set(PROJECT_VERSION_PATCH 2)
 set(PROJECT_VERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
 
 add_compile_definitions(PROJECT_VERSION="${PROJECT_VERSION}")
@@ -16,6 +16,7 @@ add_compile_definitions(PROJECT_VERSION="${PROJECT_VERSION}")
 # 𐍆𐍂𐌴𐌹𐌰 𐌸𐌹𐍅𐌹  Client - Free Servant Chat Client
 add_executable(freia-thiwi-client
     src/main.cpp
+    src/ClientConnect.cpp
 
     # ImGui core
     imgui/imgui.cpp
@@ -26,6 +27,7 @@ add_executable(freia-thiwi-client
     # ImGui backends
     imgui/backends/imgui_impl_glfw.cpp
     imgui/backends/imgui_impl_opengl3.cpp
+
 )
 
 # Include directories for our code + ImGui

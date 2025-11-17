@@ -14,19 +14,10 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <mutex>
-
-void handleSystemCallError(std::string errorMsg);
-int createClientSocket(const std::string &serverIP, int serverPort);
-void receiveMessages(int clientSocket);
-void connectToServerThread();
-void AddMessage(const char *message);
-void connectToServer();
-void sendMessage();
+#include "ClientConnect.h"
 
 
 const int bufferSize = 10240;
-std::mutex chatMutex;
-std::vector<std::string> chatMessages; // Store chat messages
 char inputBuffer[1024] = "";           // Buffer for input text
 char IP[20] = "";
 char Port[10] = "";
@@ -34,10 +25,7 @@ char User[50] = "";
 char Password[1000] = "";
 
 bool focusInput = false; // Flag to set keyboard focus
-bool isConnected = false;
-char buffer[bufferSize];
-char outMessage[bufferSize];
-int clientSocket;
+ClientConnect* client = nullptr;
 
 // Main code
 int main(int, char **)
@@ -97,11 +85,19 @@ int main(int, char **)
             ImGui::SameLine(labelWidth);
             ImGui::InputText("##ENCRYPTIONPASSWORD", Password, IM_ARRAYSIZE(Password), ImGuiInputTextFlags_EnterReturnsTrue);
 
-            if (!isConnected)
+            if (!client || !client->isConnectedToServer())
             {
                 if (ImGui::Button("Connect"))
                 {
-                    connectToServer();
+                    if (!client) {
+                        client = new ClientConnect(IP, Port, User, Password);
+                        if (client->connectToServer()) {
+                            // success!
+                        } else {
+                            delete client;
+                            client = nullptr;
+                        }
+                    }
                 }
             }
 
@@ -114,10 +110,13 @@ int main(int, char **)
             // Display the chat log in a scrollable area
             ImGui::BeginChild("ChatArea", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), true);
             {
-                std::lock_guard<std::mutex> lock(chatMutex);
-                for (const auto &message : chatMessages)
+                if (client)
                 {
-                    ImGui::TextUnformatted(message.c_str());
+                    const auto& messages = client->getMessages();
+                    for (const auto &message : messages)
+                    {
+                        ImGui::TextUnformatted(message.c_str());
+                    }
                 }
             }
             ImGui::SetScrollHereY(1.0f); // Scroll to bottom
@@ -139,8 +138,10 @@ int main(int, char **)
                 if (strlen(inputBuffer) > 0)
                 {
                     // Add the input text as a new chat message
-                    AddMessage(inputBuffer);
-                    sendMessage();
+                    if (client) {
+                        client->sendMessage(inputBuffer);
+                        inputBuffer[0] = '\0';
+                    }
                     focusInput = true;
                 }
             }
@@ -171,96 +172,4 @@ int main(int, char **)
     glfwTerminate();
 
     return 0;
-}
-
-void handleSystemCallError(std::string errorMsg)
-{
-    std::cout << errorMsg << ", errno: " << errno << "\n";
-    //exit(EXIT_FAILURE);
-}
-
-// creates a client socket
-int createClientSocket(const std::string &serverIP, int serverPort)
-{
-    int clientSocket = socket(AF_INET, SOCK_STREAM, 0);
-    if (clientSocket == -1)
-    {
-        handleSystemCallError("Failed to create socket");
-    }
-
-    // Set up the server address structure
-    sockaddr_in serverAddress;
-    serverAddress.sin_family = AF_INET;
-
-    serverAddress.sin_port = htons(serverPort);
-
-    // check IP validity by converting it to binary
-    if (inet_pton(AF_INET, serverIP.c_str(), &serverAddress.sin_addr) <= 0)
-    {
-        handleSystemCallError("Invalid address or address not supported\n");
-        close(clientSocket);
-        exit(EXIT_FAILURE);
-    }
-
-    // connect to server
-    if (connect(clientSocket, reinterpret_cast<struct sockaddr *>(&serverAddress), sizeof(serverAddress)) == -1)
-    {
-        handleSystemCallError("Error when connecting to server\n");
-        close(clientSocket);
-        exit(EXIT_FAILURE);
-    }
-
-    return clientSocket;
-}
-
-void receiveMessages(int clientSocket)
-{
-    char buffer[10240];
-
-    while (true) {
-        int bytesRead = recv(clientSocket, buffer, sizeof(buffer) - 1, 0);
-
-        if (bytesRead <= 0) {
-            AddMessage("[Disconnected from server]");
-            close(clientSocket);
-            break;
-        }
-
-        buffer[bytesRead] = '\0';
-        AddMessage(buffer);
-    }
-}
-
-void AddMessage(const char *message)
-{
-    std::lock_guard<std::mutex> lock(chatMutex);
-    chatMessages.push_back(message);
-}
-
-void connectToServer()
-{
-    int PortNumber = std::atoi(Port);
-    std::string ipString = std::string(IP);
-
-    clientSocket = createClientSocket(ipString, PortNumber);
-
-    // Start background receive loop
-    std::thread(receiveMessages, clientSocket).detach();
-    isConnected = true;
-}
-
-
-void sendMessage()
-{
-    std::string userMessage;
-    std::string userString = std::string(User);
-    std::string passwordString = std::string(Password);
-
-    std::string messageContent = std::string(inputBuffer);
-    userMessage = userString + ": " + messageContent + "\n";
-
-    send(clientSocket, userMessage.data(), userMessage.size(), 0);
-
-    // Clear the input buffer
-    inputBuffer[0] = '\0';
 }
