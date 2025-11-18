@@ -1,5 +1,8 @@
 #include "FreiaUI.h"
+#include "Validation.h"
 #include <iostream>
+#include <cstring>
+#include <cctype>
 
 FreiaUI::FreiaUI()
 {
@@ -48,6 +51,8 @@ bool FreiaUI::render()
 
     if (!window || glfwWindowShouldClose(window))
         return false;
+    if (quitRequested)
+        return false;
 
     glfwPollEvents();
 
@@ -58,6 +63,7 @@ bool FreiaUI::render()
     ImGui::PushFont(customFont);
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.5f, 1.0f));
 
+    renderMenuBar();
     renderConnectionPanel();
     renderChatPanel();
 
@@ -95,21 +101,15 @@ void FreiaUI::renderConnectionPanel()
 
     ImGui::Text("Encryption Password: ");
     ImGui::SameLine(labelWidth);
-    ImGui::InputText("##ENCPASS", Password, IM_ARRAYSIZE(Password));
+    ImGui::InputText("##ENCPASS", ChatPassword, IM_ARRAYSIZE(ChatPassword));
 
     if (!client || !client->isConnectedToServer())
     {
-        if (ImGui::Button("Connect"))
-        {
-            client = new ClientConnect();
-            client->configure(IP, Port, User, Password);
-            if (!client->connectToServer())
-            {
-                delete client;
-                client = nullptr;
-                // TODO: pup up
-            }
-        }
+        connectButton();
+    }
+    else
+    {
+        disconnectButton();
     }
 
     ImGui::End();
@@ -159,4 +159,99 @@ void FreiaUI::cleanupUI()
 
     glfwDestroyWindow(window);
     glfwTerminate();
+}
+
+void FreiaUI::connectButton()
+{
+    if (ImGui::Button("Connect"))
+    {
+        // Basic UI validation before touching networking
+        if (!Validation::isValidIP(IP))
+        {
+            // TODO: show popup "Invalid IP address"
+            return;
+        }
+
+        if (!Validation::isValidPort(Port))
+        {
+            // TODO: show popup "Port must be a number"
+            return;
+        }
+
+        if(!Validation::isValidUser(User))
+        {
+            // TODO: show popup "Not valid user"
+            return;
+        }
+        if(!Validation::isValidPassword(ChatPassword))
+        {
+            // TODO: show popup "Not a valid Chat Password"
+            return;
+        }
+
+        // Create new client
+        client = new ClientConnect();
+
+        // Network-side validation
+        if (client->configure(IP, Port, User, ChatPassword))
+        {
+            if (!client->connectToServer())
+            {
+                delete client;
+                client = nullptr;
+                // TODO: pop up "Connection failed"
+            }
+        }
+        else
+        {
+            delete client;
+            client = nullptr;
+            // TODO: pop up "Configuration rejected"
+        }
+    }
+}
+
+
+void FreiaUI::disconnectButton()
+{
+    if (ImGui::Button("Disconnect"))
+    {
+        if(client)
+        {
+            client->disconnect();
+            delete client;
+            client = nullptr;
+            clearInputFields();
+        }
+    }
+}
+
+void FreiaUI::clearInputFields()
+{
+    std::memset(IP, 0, sizeof(IP));
+    std::memset(Port, 0, sizeof(Port));
+    std::memset(User, 0, sizeof(User));
+    std::memset(ChatPassword, 0, sizeof(ChatPassword));
+    std::memset(inputBuffer, 0, sizeof(inputBuffer));
+}
+
+void FreiaUI::renderMenuBar()
+{
+    //ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ImVec4(0.15f, 0.05f, 0.07f, 1.0f)); // darker/pinkish
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
+    ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1, 0, 0.7, 1));
+
+    if (ImGui::BeginMainMenuBar())
+    {
+        if (ImGui::BeginMenu("Application"))
+        {
+            if (ImGui::MenuItem("Exit")) quitRequested = true;
+            ImGui::EndMenu();
+        }
+        ImGui::EndMainMenuBar();
+    }
+
+    ImGui::PopStyleVar(2);
+    ImGui::PopStyleColor();
 }

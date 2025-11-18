@@ -19,17 +19,23 @@ public:
 private:
     void renderConnectionPanel();
     void renderChatPanel();
+    void connectButton();
+    void disconnectButton();
+    void clearInputFields();
+    void renderMenuBar();
 
-private:
+
+
     static const int bufferSize = 1024;
 
     char inputBuffer[bufferSize] = "";
     char IP[20] = "";
     char Port[10] = "";
     char User[50] = "";
-    char Password[1000] = "";
+    char ChatPassword[1000] = "";
 
     bool focusInput = false;
+    bool quitRequested = false;
 
     ClientConnect* client = nullptr;
     ImGuiIO* io = nullptr;

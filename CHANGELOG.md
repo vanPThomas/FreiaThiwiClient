@@ -1,25 +1,37 @@
 # Changelog
 All notable changes to **Freia Thiwi Client** will be documented here.
 
+---
+
+## [0.1.4] - 2025-11-18
+### added
+- Added validation class
+- Added UI and networking validation.
+- If connection is not made in 3 seconds, there is a time out
+- Added a disconnect button when connected
+- Added menu bar with exit button
+
+---
+
 ## [0.1.3] - 2025-11-17
 ### Added
 - UI class
 - Moved all ui logic to FreiaUI class
-- Clean seperation of the connection class and the UI class
+- Clean separation of the connection class and the UI class
 
 ---
 
 ## [0.1.2] - 2025-11-17
 ### Added
 - Client class
-- seperated UI from connectivity logic.
+- separated UI from connectivity logic.
 - cleaned up connectivity code
 
 ---
 
 ## [0.1.1] - 2025-11-16
 ### Changed
-- Seperated the UI logic from the networking logic in preperation of seperate class creation.
+- Separated the UI logic from the networking logic in preparation of separate class creation.
 
 ---
 

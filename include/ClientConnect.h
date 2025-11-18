@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <cstring>
 
 class ClientConnect
 {
@@ -20,7 +21,7 @@ public:
 
     const std::vector<std::string>& getMessages() const;
     bool isConnectedToServer() const { return isConnected; }
-    void configure(const char* ip, const char* port, const char* user, const char* password);
+    bool configure(const char* ip, const char* port, const char* user, const char* password);
 
 
 private:

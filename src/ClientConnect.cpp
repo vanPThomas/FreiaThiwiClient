@@ -1,5 +1,8 @@
 #include "ClientConnect.h"
+#include "Validation.h"
 #include <iostream>
+#include <arpa/inet.h>
+#include <netinet/in.h> 
 
 ClientConnect::ClientConnect(){}
 ClientConnect::ClientConnect(const char* ip,
@@ -22,7 +25,17 @@ int ClientConnect::createClientSocket(const std::string &serverIP, int serverPor
 {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == -1)
+    {
         handleSystemCallError("Failed to create socket");
+        return -1;
+    }
+
+    // Set timeout (3 seconds example)
+    struct timeval tv;
+    tv.tv_sec = 3;
+    tv.tv_usec = 0;
+    setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+    setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
 
     sockaddr_in serverAddress{};
     serverAddress.sin_family = AF_INET;
@@ -30,7 +43,7 @@ int ClientConnect::createClientSocket(const std::string &serverIP, int serverPor
 
     if (inet_pton(AF_INET, serverIP.c_str(), &serverAddress.sin_addr) <= 0)
     {
-        handleSystemCallError("Invalid address or address not supported");
+        handleSystemCallError("Invalid IP address or unsupported format");
         close(sock);
         return -1;
     }
@@ -42,8 +55,16 @@ int ClientConnect::createClientSocket(const std::string &serverIP, int serverPor
         return -1;
     }
 
+    tv.tv_sec = 0;
+    tv.tv_usec = 0;
+    setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
+    setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+    addMessage("[Connected to server]");
+
+
     return sock;
 }
+
 
 bool ClientConnect::connectToServer()
 {
@@ -110,10 +131,23 @@ const std::vector<std::string>& ClientConnect::getMessages() const
     return chatMessages;
 }
 
-void ClientConnect::configure(const char* ip, const char* port, const char* user, const char* password)
+bool ClientConnect::configure(const char* ip, const char* port, const char* user, const char* password)
 {
+    if (!Validation::isValidIP(ip)) return false;
+    if (!Validation::isValidPort(port)) return false;
+    if (!Validation::isValidUser(user)) return false;
+    if (!Validation::isValidPassword(password)) return false;
+
+    int p = std::atoi(port);
+    // Validate IPv4 format using inet_pton test
+    // sockaddr_in sa{};
+    // if (inet_pton(AF_INET, ip, &(sa.sin_addr)) <= 0)
+    //     return false;
+
     this->ip = ip;
-    this->port = std::atoi(port);
+    this->port = p;
     this->user = user;
-    this->password = password;
+    this->password = password ? password : "";
+
+    return true;
 }
