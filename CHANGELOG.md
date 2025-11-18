@@ -3,6 +3,13 @@ All notable changes to **Freia Thiwi Client** will be documented here.
 
 ---
 
+## [0.2] - 2025-11-18
+### Added
+- End to End Encryption has been added
+- All messages coming and going are now secure and even unreadable by the server.
+
+---
+
 ## [0.1.4] - 2025-11-18
 ### added
 - Added validation class

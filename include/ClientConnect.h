@@ -12,7 +12,7 @@ class ClientConnect
 {
 public:
     ClientConnect();
-    ClientConnect(const char* ip, const char* port, const char* user, const char* password);
+    ClientConnect(const char* ip, const char* port, const char* user, const char* chatPassword);
     ~ClientConnect();
 
     bool connectToServer();
@@ -21,7 +21,7 @@ public:
 
     const std::vector<std::string>& getMessages() const;
     bool isConnectedToServer() const { return isConnected; }
-    bool configure(const char* ip, const char* port, const char* user, const char* password);
+    bool configure(const char* ip, const char* port, const char* user, const char* chatPassword);
 
 
 private:
@@ -39,7 +39,7 @@ private:
     std::string ip;
     int port;
     std::string user;
-    std::string password;
+    std::string chatPassword;
 
     const int bufferSize = 10240;
 };

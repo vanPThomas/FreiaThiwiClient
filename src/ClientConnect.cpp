@@ -1,5 +1,6 @@
 #include "ClientConnect.h"
 #include "Validation.h"
+#include "FreiaEncryption.h"
 #include <iostream>
 #include <arpa/inet.h>
 #include <netinet/in.h> 
@@ -8,8 +9,8 @@ ClientConnect::ClientConnect(){}
 ClientConnect::ClientConnect(const char* ip,
                              const char* port,
                              const char* user,
-                             const char* password)
-    : ip(ip), port(std::atoi(port)), user(user), password(password) {}
+                             const char* chatPassword)
+    : ip(ip), port(std::atoi(port)), user(user), chatPassword(chatPassword) {}
 
 ClientConnect::~ClientConnect()
 {
@@ -86,27 +87,82 @@ void ClientConnect::disconnect()
         close(clientSocket);
     }
 }
+
+// void ClientConnect::receiveMessages()
+// {
+//     while (isConnected)
+//     {
+//         uint32_t netLen = 0;
+//         int r = recv(clientSocket, &netLen, sizeof(netLen), MSG_WAITALL);
+//         if (r <= 0) break;
+
+//         uint32_t len = ntohl(netLen);
+//         if (len == 0 || len > bufferSize) break; // sanity check
+
+//         std::string msg(len, '\0');
+//         r = recv(clientSocket, msg.data(), len, MSG_WAITALL);
+//         if (r <= 0) break;
+
+//         addMessage(msg);
+//     }
+
+//     addMessage("[Disconnected from server]");
+//     disconnect();
+// }
+
 void ClientConnect::receiveMessages()
 {
-    char buffer[bufferSize];
-
     while (isConnected)
     {
-        int bytesRead = recv(clientSocket, buffer, bufferSize - 1, 0);
-
-        if (bytesRead <= 0)
+        // 1) Read length prefix
+        uint32_t netLen = 0;
+        int r = recv(clientSocket, &netLen, sizeof(netLen), MSG_WAITALL);
+        if (r <= 0)
         {
             addMessage("[Disconnected from server]");
             isConnected = false;
             break;
         }
 
-        buffer[bytesRead] = '\0';
-        addMessage(std::string(buffer));
+        uint32_t len = ntohl(netLen);
+        if (len == 0 || len > bufferSize)
+        {
+            addMessage("[Error] Invalid message length received.");
+            isConnected = false;
+            break;
+        }
+
+        // 2) Read encryptedData payload
+        std::string encryptedData(len, '\0');
+        r = recv(clientSocket, encryptedData.data(), len, MSG_WAITALL);
+        if (r <= 0)
+        {
+            addMessage("[Disconnected from server]");
+            isConnected = false;
+            break;
+        }
+
+        // 3) Decrypt
+        if (chatPassword.empty())
+        {
+            addMessage("[Error] Received encrypted message but no password is set.");
+            continue;
+        }
+
+        std::string plaintext = FreiaEncryption::decryptData(encryptedData, chatPassword);
+        if (plaintext.empty())
+        {
+            addMessage("[Decryption failed]");
+            continue;
+        }
+
+        // 4) Show decrypted text in the chat
+        addMessage(plaintext);
     }
 
     disconnect();
 }
+
 
 void ClientConnect::addMessage(const std::string &message)
 {
@@ -121,8 +177,20 @@ void ClientConnect::sendMessage(const std::string& text)
 
     std::string fullMsg = user + ": " + text + "\n";
     addMessage(fullMsg);
-    if (clientSocket != -1)
-        send(clientSocket, fullMsg.data(), fullMsg.size(), 0);
+
+    //encrypt message
+    std::string encryptedMessage = FreiaEncryption::encryptData(fullMsg, chatPassword);
+    if(encryptedMessage.empty())
+    {
+        addMessage("[Error] Encryption failed.");
+        return;
+    }
+
+    uint32_t len = encryptedMessage.size();
+    uint32_t netLen = htonl(len); // convert to network byte order
+
+    send(clientSocket, &netLen, sizeof(netLen), 0);
+    send(clientSocket, encryptedMessage.data(), encryptedMessage.size(), 0);
 }
 
 const std::vector<std::string>& ClientConnect::getMessages() const
@@ -131,23 +199,20 @@ const std::vector<std::string>& ClientConnect::getMessages() const
     return chatMessages;
 }
 
-bool ClientConnect::configure(const char* ip, const char* port, const char* user, const char* password)
+bool ClientConnect::configure(const char* ip, const char* port, const char* user, const char* chatPassword)
 {
     if (!Validation::isValidIP(ip)) return false;
     if (!Validation::isValidPort(port)) return false;
     if (!Validation::isValidUser(user)) return false;
-    if (!Validation::isValidPassword(password)) return false;
+    if (!Validation::isValidPassword(chatPassword)) return false;
 
     int p = std::atoi(port);
-    // Validate IPv4 format using inet_pton test
-    // sockaddr_in sa{};
-    // if (inet_pton(AF_INET, ip, &(sa.sin_addr)) <= 0)
-    //     return false;
+
 
     this->ip = ip;
     this->port = p;
     this->user = user;
-    this->password = password ? password : "";
+    this->chatPassword = chatPassword ? chatPassword : "";
 
     return true;
 }

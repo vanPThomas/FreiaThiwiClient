@@ -1,13 +1,13 @@
 cmake_minimum_required(VERSION 3.16)
-project(FreiaThiwiClient VERSION 0.1.4 LANGUAGES CXX)
+project(FreiaThiwiClient VERSION 0.2.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # ---- version -------------------------------------------------
 set(PROJECT_VERSION_MAJOR 0)
-set(PROJECT_VERSION_MINOR 1)
-set(PROJECT_VERSION_PATCH 4)
+set(PROJECT_VERSION_MINOR 2)
+set(PROJECT_VERSION_PATCH 0)
 set(PROJECT_VERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
 
 add_compile_definitions(PROJECT_VERSION="${PROJECT_VERSION}")
@@ -19,6 +19,7 @@ add_executable(freia-thiwi-client
     src/ClientConnect.cpp
     src/FreiaUI.cpp
     src/Validation.cpp
+    src/FreiaEncryption.cpp
 
     # ImGui core
     imgui/imgui.cpp
@@ -41,6 +42,10 @@ target_include_directories(freia-thiwi-client PRIVATE
 
 # Find system libs
 find_package(PkgConfig REQUIRED)
+
+# OpenSSL (required)
+find_package(OpenSSL REQUIRED)
+target_link_libraries(freia-thiwi-client OpenSSL::SSL OpenSSL::Crypto)
 
 # GLFW
 pkg_search_module(GLFW REQUIRED glfw3)
