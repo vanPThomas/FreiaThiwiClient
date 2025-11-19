@@ -7,6 +7,8 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <cstring>
+#include "FreiaEncryption.h"
+
 
 class ClientConnect
 {
@@ -42,4 +44,7 @@ private:
     std::string chatPassword;
 
     const int bufferSize = 10240;
+
+    FreiaEncryption::Key sessionKey{};
+    bool hasKey = false;
 };

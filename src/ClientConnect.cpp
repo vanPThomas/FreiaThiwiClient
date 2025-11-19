@@ -1,6 +1,5 @@
 #include "ClientConnect.h"
 #include "Validation.h"
-#include "FreiaEncryption.h"
 #include <iostream>
 #include <arpa/inet.h>
 #include <netinet/in.h> 
@@ -143,13 +142,13 @@ void ClientConnect::receiveMessages()
         }
 
         // 3) Decrypt
-        if (chatPassword.empty())
+        if (!hasKey)
         {
             addMessage("[Error] Received encrypted message but no password is set.");
             continue;
         }
 
-        std::string plaintext = FreiaEncryption::decryptData(encryptedData, chatPassword);
+        std::string plaintext = FreiaEncryption::decryptData(encryptedData, sessionKey);
         if (plaintext.empty())
         {
             addMessage("[Decryption failed]");
@@ -179,7 +178,7 @@ void ClientConnect::sendMessage(const std::string& text)
     addMessage(fullMsg);
 
     //encrypt message
-    std::string encryptedMessage = FreiaEncryption::encryptData(fullMsg, chatPassword);
+    std::string encryptedMessage = FreiaEncryption::encryptData(fullMsg, sessionKey);
     if(encryptedMessage.empty())
     {
         addMessage("[Error] Encryption failed.");
@@ -213,6 +212,13 @@ bool ClientConnect::configure(const char* ip, const char* port, const char* user
     this->port = p;
     this->user = user;
     this->chatPassword = chatPassword ? chatPassword : "";
+
+    if (!this->chatPassword.empty()) {
+        sessionKey = FreiaEncryption::deriveKey(this->chatPassword);
+        hasKey = true;
+    } else {
+        hasKey = false;
+    }
 
     return true;
 }
