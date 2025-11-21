@@ -1,6 +1,17 @@
 # Changelog
 All notable changes to **Freia Thiwi Client** will be documented here.
 
+## [0.2.2] - 2025-11-21
+### Added
+- Added Error popup windows
+- Added Auto scroll down in chat window
+
+---
+
+## [0.2.1] - 2025-11-19
+### Changed
+- Optimized encryption and decryption
+
 ---
 
 ## [0.2] - 2025-11-18
@@ -57,8 +68,6 @@ All notable changes to **Freia Thiwi Client** will be documented here.
 - Legacy AES encryption logic (to be reintroduced and improved later)
 
 ### Known Limitations
-- Messages are currently **not encrypted**
 - No user presence/identity validation
 - No reconnection handling after server disconnect
-- UI is functional but not yet theme-styled
 

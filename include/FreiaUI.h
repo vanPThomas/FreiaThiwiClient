@@ -23,8 +23,8 @@ private:
     void disconnectButton();
     void clearInputFields();
     void renderMenuBar();
-
-
+    void showPopup();
+    void openPopup(const std::string& message);
 
     static const int bufferSize = 1024;
 
@@ -41,4 +41,8 @@ private:
     ImGuiIO* io = nullptr;
     ImFont* customFont = nullptr;
     GLFWwindow* window = nullptr;
+
+    //Popup Variables
+    std::string popupMessage;
+    bool popupOpen = false;
 };

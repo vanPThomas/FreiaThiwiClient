@@ -48,17 +48,17 @@ FreiaUI::~FreiaUI()
 
 bool FreiaUI::render()
 {
-
     if (!window || glfwWindowShouldClose(window))
         return false;
     if (quitRequested)
-        return false;
+    return false;
 
     glfwPollEvents();
 
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
+    showPopup();
 
     ImGui::PushFont(customFont);
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.5f, 1.0f));
@@ -125,6 +125,8 @@ void FreiaUI::renderChatPanel()
         const auto& messages = client->getMessages();
         for (const auto& msg : messages)
             ImGui::TextUnformatted(msg.c_str());
+
+        ImGui::SetScrollHereY(1.0f);
     }
     ImGui::EndChild();
 
@@ -168,24 +170,24 @@ void FreiaUI::connectButton()
         // Basic UI validation before touching networking
         if (!Validation::isValidIP(IP))
         {
-            // TODO: show popup "Invalid IP address"
+            openPopup("Invalid IP address.");
             return;
         }
 
         if (!Validation::isValidPort(Port))
         {
-            // TODO: show popup "Port must be a number"
+            openPopup("Invalid PORT.");
             return;
         }
 
         if(!Validation::isValidUser(User))
         {
-            // TODO: show popup "Not valid user"
+            openPopup("Username is not valid.");
             return;
         }
         if(!Validation::isValidPassword(ChatPassword))
         {
-            // TODO: show popup "Not a valid Chat Password"
+            openPopup("Chat password is invalid.");
             return;
         }
 
@@ -199,14 +201,14 @@ void FreiaUI::connectButton()
             {
                 delete client;
                 client = nullptr;
-                // TODO: pop up "Connection failed"
+                openPopup("Configuration rejected.");
             }
         }
         else
         {
             delete client;
             client = nullptr;
-            // TODO: pop up "Configuration rejected"
+            openPopup("Connection failed. Server unreachable.");
         }
     }
 }
@@ -254,4 +256,30 @@ void FreiaUI::renderMenuBar()
 
     ImGui::PopStyleVar(2);
     ImGui::PopStyleColor();
+}
+
+void FreiaUI::openPopup(const std::string& message)
+{
+    popupMessage = message;
+    popupOpen = true;
+}
+
+void FreiaUI::showPopup()
+{
+    if (popupOpen)
+        ImGui::OpenPopup("Error");
+
+    if (ImGui::BeginPopupModal("Error", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::TextWrapped("%s", popupMessage.c_str());
+        ImGui::Separator();
+
+        if (ImGui::Button("OK", ImVec2(120, 0)))
+        {
+            popupOpen = false;
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::EndPopup();
+    }
 }
