@@ -13,7 +13,6 @@ public:
 
     bool render();
     ClientConnect* getClient() const { return client; }
-    void cleanupUI();
     void setClient(ClientConnect* c) {client = c;}
 
 private:

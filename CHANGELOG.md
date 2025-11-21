@@ -1,6 +1,14 @@
 # Changelog
 All notable changes to **Freia Thiwi Client** will be documented here.
 
+---
+
+## [0.2.3] - 2025-11-21
+### Added
+- Fixed double shutdown bug
+
+---
+
 ## [0.2.2] - 2025-11-21
 ### Added
 - Added Error popup windows
@@ -14,7 +22,7 @@ All notable changes to **Freia Thiwi Client** will be documented here.
 
 ---
 
-## [0.2] - 2025-11-18
+## [0.2.0] - 2025-11-18
 ### Added
 - End to End Encryption has been added
 - All messages coming and going are now secure and even unreadable by the server.

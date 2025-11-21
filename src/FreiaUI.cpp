@@ -152,17 +152,6 @@ void FreiaUI::renderChatPanel()
     ImGui::End();
 }
 
-void FreiaUI::cleanupUI()
-{
-    // Cleanup
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
-
-    glfwDestroyWindow(window);
-    glfwTerminate();
-}
-
 void FreiaUI::connectButton()
 {
     if (ImGui::Button("Connect"))
