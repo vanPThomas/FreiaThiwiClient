@@ -35,6 +35,7 @@ FreiaUI::FreiaUI()
     {
         std::cerr << "Failed to load font\n";
     }
+    ImGui::GetIO().FontGlobalScale = 2.0f;  // 200% scaling
 }
 
 FreiaUI::~FreiaUI()
@@ -84,7 +85,7 @@ bool FreiaUI::render()
 
 void FreiaUI::renderConnectionPanel()
 {
-    const float labelWidth = 220.0f;
+    const float labelWidth = 420.0f;
     ImGui::Begin("Connection Data");
 
     ImGui::Text("IP: ");
@@ -102,6 +103,10 @@ void FreiaUI::renderConnectionPanel()
     ImGui::Text("Encryption Password: ");
     ImGui::SameLine(labelWidth);
     ImGui::InputText("##ENCPASS", ChatPassword, IM_ARRAYSIZE(ChatPassword));
+
+    ImGui::Text("Server Password:");
+    ImGui::SameLine(labelWidth);
+    ImGui::InputText("##SERVERPASS", ServerPassword, IM_ARRAYSIZE(ServerPassword));
 
     if (!client || !client->isConnectedToServer())
     {
@@ -179,25 +184,35 @@ void FreiaUI::connectButton()
             openPopup("Chat password is invalid.");
             return;
         }
+        if(!Validation::isValidPassword(ServerPassword))
+        {
+            openPopup("Server password is invalid.");
+            return;
+        }
 
         // Create new client
+        // if (client)
+        // {
+        //     delete client;
+        //     client = nullptr;
+        // }
         client = new ClientConnect();
-
+        
         // Network-side validation
-        if (client->configure(IP, Port, User, ChatPassword))
+        if (client->configure(IP, Port, User, ChatPassword, ServerPassword))
         {
             if (!client->connectToServer())
             {
                 delete client;
                 client = nullptr;
-                openPopup("Configuration rejected.");
+                openPopup("Connection failed. Server unreachable.");
             }
         }
         else
         {
             delete client;
             client = nullptr;
-            openPopup("Connection failed. Server unreachable.");
+            openPopup("Configuration rejected.");
         }
     }
 }

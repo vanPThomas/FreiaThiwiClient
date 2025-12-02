@@ -32,6 +32,7 @@ private:
     char Port[10] = "";
     char User[50] = "";
     char ChatPassword[1000] = "";
+    char ServerPassword[1000] = "";
 
     bool focusInput = false;
     bool quitRequested = false;

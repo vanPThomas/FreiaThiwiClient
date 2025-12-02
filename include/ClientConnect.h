@@ -23,14 +23,16 @@ public:
 
     const std::vector<std::string>& getMessages() const;
     bool isConnectedToServer() const { return isConnected; }
-    bool configure(const char* ip, const char* port, const char* user, const char* chatPassword);
-
+    bool configure(const char*, const char*, const char*, const char*, const char*);
 
 private:
     void handleSystemCallError(const std::string& errorMsg);
     int createClientSocket(const std::string &serverIP, int serverPort);
     void receiveMessages();
     void addMessage(const std::string& message);
+    void handleProtocolPacket(const std::string& encryptedData);
+    std::vector<std::string> splitByNewline(const std::string& s);
+
 
     int clientSocket = -1;
     bool isConnected = false;
@@ -42,9 +44,12 @@ private:
     int port;
     std::string user;
     std::string chatPassword;
+    std::string serverPassword;
 
     const int bufferSize = 10240;
 
-    FreiaEncryption::Key sessionKey{};
-    bool hasKey = false;
+    FreiaEncryption::Key sessionKey{};          //E2EE
+    FreiaEncryption::Key serverSessionKey{};    //Transport
+    bool hasChatKey = false;
+    bool hasServerKey = false;
 };

@@ -2,7 +2,7 @@
 #include "Validation.h"
 #include <iostream>
 #include <arpa/inet.h>
-#include <netinet/in.h> 
+#include <netinet/in.h>
 
 ClientConnect::ClientConnect(){}
 ClientConnect::ClientConnect(const char* ip,
@@ -87,28 +87,6 @@ void ClientConnect::disconnect()
     }
 }
 
-// void ClientConnect::receiveMessages()
-// {
-//     while (isConnected)
-//     {
-//         uint32_t netLen = 0;
-//         int r = recv(clientSocket, &netLen, sizeof(netLen), MSG_WAITALL);
-//         if (r <= 0) break;
-
-//         uint32_t len = ntohl(netLen);
-//         if (len == 0 || len > bufferSize) break; // sanity check
-
-//         std::string msg(len, '\0');
-//         r = recv(clientSocket, msg.data(), len, MSG_WAITALL);
-//         if (r <= 0) break;
-
-//         addMessage(msg);
-//     }
-
-//     addMessage("[Disconnected from server]");
-//     disconnect();
-// }
-
 void ClientConnect::receiveMessages()
 {
     while (isConnected)
@@ -124,7 +102,8 @@ void ClientConnect::receiveMessages()
         }
 
         uint32_t len = ntohl(netLen);
-        if (len == 0 || len > bufferSize)
+        static constexpr uint32_t MAX_PACKET = 10 * 1024 * 1024;
+        if (len == 0 || len > MAX_PACKET)
         {
             addMessage("[Error] Invalid message length received.");
             isConnected = false;
@@ -141,22 +120,14 @@ void ClientConnect::receiveMessages()
             break;
         }
 
-        // 3) Decrypt
-        if (!hasKey)
+        // 3) Handle Package
+        if (!hasChatKey)
         {
             addMessage("[Error] Received encrypted message but no password is set.");
             continue;
         }
-
-        std::string plaintext = FreiaEncryption::decryptData(encryptedData, sessionKey);
-        if (plaintext.empty())
-        {
-            addMessage("[Decryption failed]");
-            continue;
-        }
-
-        // 4) Show decrypted text in the chat
-        addMessage(plaintext);
+        
+        handleProtocolPacket(encryptedData);
     }
 
     disconnect();
@@ -174,22 +145,37 @@ void ClientConnect::sendMessage(const std::string& text)
     if (!isConnected || text.empty())
         return;
 
-    std::string fullMsg = user + ": " + text + "\n";
-    addMessage(fullMsg);
-
-    //encrypt message
-    std::string encryptedMessage = FreiaEncryption::encryptData(fullMsg, sessionKey);
-    if(encryptedMessage.empty())
+    // 1. Encrypt chat message (E2EE)
+    std::string chatCipher = FreiaEncryption::encryptData(text, sessionKey);
+    if (chatCipher.empty())
     {
-        addMessage("[Error] Encryption failed.");
+        addMessage("[Error] Chat encryption failed.");
+        return;
+    }
+    // 2. Build PROT1 frame (plaintext to server)
+
+    std::string frame = "PROT1\n" + user + "\n" + std::to_string(chatCipher.size()) + "\n";
+    frame.append(chatCipher);
+
+    // 3. Encrypt with SERVER password (transport layer)
+    std::string transportCipher = FreiaEncryption::encryptData(frame, serverSessionKey);
+
+    if (transportCipher.empty())
+    {
+        addMessage("[Error] Server-layer encryption failed.");
         return;
     }
 
-    uint32_t len = encryptedMessage.size();
+    // 4. Length prefix + send
+
+    uint32_t len = transportCipher.size();
     uint32_t netLen = htonl(len); // convert to network byte order
 
     send(clientSocket, &netLen, sizeof(netLen), 0);
-    send(clientSocket, encryptedMessage.data(), encryptedMessage.size(), 0);
+    send(clientSocket, transportCipher.data(), transportCipher.size(), 0);
+
+    // 5. Local echo (PLAINTEXT)
+    addMessage(user + ": " + text);
 }
 
 const std::vector<std::string>& ClientConnect::getMessages() const
@@ -198,27 +184,137 @@ const std::vector<std::string>& ClientConnect::getMessages() const
     return chatMessages;
 }
 
-bool ClientConnect::configure(const char* ip, const char* port, const char* user, const char* chatPassword)
+bool ClientConnect::configure(
+    const char* ip,
+    const char* port,
+    const char* user,
+    const char* chatPassword,
+    const char* serverPassword)
 {
     if (!Validation::isValidIP(ip)) return false;
     if (!Validation::isValidPort(port)) return false;
     if (!Validation::isValidUser(user)) return false;
     if (!Validation::isValidPassword(chatPassword)) return false;
+    if (!Validation::isValidPassword(serverPassword)) return false;
 
     int p = std::atoi(port);
 
-
-    this->ip = ip;
+    this->ip   = ip;
     this->port = p;
     this->user = user;
-    this->chatPassword = chatPassword ? chatPassword : "";
 
-    if (!this->chatPassword.empty()) {
+    this->chatPassword   = chatPassword   ? chatPassword   : "";
+    this->serverPassword = serverPassword ? serverPassword : "";
+
+    // Derive Chat Session Key
+    if (!this->chatPassword.empty())
+    {
         sessionKey = FreiaEncryption::deriveKey(this->chatPassword);
-        hasKey = true;
-    } else {
-        hasKey = false;
+        hasChatKey = true;
+    }
+    else
+    {
+        hasChatKey = false;
     }
 
-    return true;
+    // Derive Server Session Key
+    if (!this->serverPassword.empty())
+    {
+        serverSessionKey = FreiaEncryption::deriveKey(this->serverPassword);
+        hasServerKey = true;
+    }
+    else
+    {
+        hasServerKey = false;
+    }
+
+    return hasChatKey && hasServerKey;
+}
+
+void ClientConnect::handleProtocolPacket(const std::string& encryptedData)
+{
+    std::string plaintext =
+        FreiaEncryption::decryptData(encryptedData, serverSessionKey);
+
+    if (plaintext.empty()) {
+        addMessage("[Decryption failed]");
+        return;
+    }
+
+    auto parts = splitByNewline(plaintext);
+    if (parts.empty()) {
+        addMessage("[Protocol error] empty packet.");
+        return;
+    }
+
+    const std::string& proto = parts[0];
+
+    if (proto == "PROT1")
+    {
+        // We expect at least:
+        // 0: "PROT1"
+        // 1: username
+        // 2: length
+        // plus ciphertext bytes after the third newline
+        if (parts.size() < 3) {
+            addMessage("[Protocol error] malformed PROT1 header.");
+            return;
+        }
+
+        const std::string& messageUser = parts[1];
+
+        size_t len = 0;
+        try {
+            len = std::stoul(parts[2]);
+        } catch (...) {
+            addMessage("[Protocol error] invalid length in PROT1.");
+            return;
+        }
+
+        if (len == 0 || len > plaintext.size()) {
+            addMessage("[Protocol error] PROT1 length out of range.");
+            return;
+        }
+
+        // Ciphertext is the last `len` bytes of the plaintext frame
+        std::string cipher = plaintext.substr(plaintext.size() - len);
+
+        std::string text = FreiaEncryption::decryptData(cipher, sessionKey);
+        if (text.empty()) {
+            addMessage("[Chat decryption failed]");
+            return;
+        }
+
+        addMessage(messageUser + ": " + text);
+    }
+    else
+    {
+        addMessage("[Unknown protocol] " + proto);
+    }
+}
+
+
+
+std::vector<std::string> ClientConnect::splitByNewline(const std::string& s)
+{
+    std::vector<std::string> out;
+    std::string current;
+
+    for (char c : s)
+    {
+        if (c == '\n')
+        {
+            out.push_back(current);
+            current.clear();
+        }
+        else
+        {
+            current += c;
+        }
+    }
+
+    if (!current.empty())
+        out.push_back(current);
+
+    return out;
 }

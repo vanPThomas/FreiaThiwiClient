@@ -1,10 +1,16 @@
 # Changelog
 All notable changes to **Freia Thiwi Client** will be documented here.
 
+## [0.3.0] - 2025-12-02
+### Added
+- Added Protocol and package framing
+- Added Server password and server encryption
+- Added Protocol one (PROT1)
+
 ---
 
 ## [0.2.3] - 2025-11-21
-### Added
+### Changed
 - Fixed double shutdown bug
 
 ---
