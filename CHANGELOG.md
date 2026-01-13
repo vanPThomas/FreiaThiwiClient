@@ -1,6 +1,14 @@
 # Changelog
 All notable changes to **Freia Thiwi Client** will be documented here.
 
+---
+
+## [0.3.1] - 2026-01-13
+- ClientConnect: better parameter handling via ConnectionParams struct
+- ClientConnect: safer newline splitting implementation
+
+---
+
 ## [0.3.0] - 2025-12-02
 ### Added
 - Added Protocol and package framing

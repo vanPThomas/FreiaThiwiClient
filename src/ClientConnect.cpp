@@ -3,6 +3,7 @@
 #include <iostream>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <sstream>
 
 ClientConnect::ClientConnect(){}
 ClientConnect::ClientConnect(const char* ip,
@@ -191,46 +192,35 @@ bool ClientConnect::configure(
     const char* chatPassword,
     const char* serverPassword)
 {
+    ConnectionParams p;
+
     if (!Validation::isValidIP(ip)) return false;
     if (!Validation::isValidPort(port)) return false;
     if (!Validation::isValidUser(user)) return false;
     if (!Validation::isValidPassword(chatPassword)) return false;
     if (!Validation::isValidPassword(serverPassword)) return false;
 
-    int p = std::atoi(port);
+    p.ip        = ip ? ip : "";
+    p.port      = port ? std::atoi(port) : 0;
+    p.user      = user ? user : "";
+    p.chat_pw   = chatPassword   ? chatPassword   : "";
+    p.server_pw = serverPassword ? serverPassword : "";
 
-    this->ip   = ip;
-    this->port = p;
-    this->user = user;
+    this->ip             = std::move(p.ip);
+    this->port           = p.port;
+    this->user           = std::move(p.user);
+    this->chatPassword   = std::move(p.chat_pw);
+    this->serverPassword = std::move(p.server_pw);
 
-    this->chatPassword   = chatPassword   ? chatPassword   : "";
-    this->serverPassword = serverPassword ? serverPassword : "";
+    // derive keys
+    sessionKey       = FreiaEncryption::deriveKey(this->chatPassword);
+    serverSessionKey = FreiaEncryption::deriveKey(this->serverPassword);
 
-    // Derive Chat Session Key
-    if (!this->chatPassword.empty())
-    {
-        sessionKey = FreiaEncryption::deriveKey(this->chatPassword);
-        hasChatKey = true;
-    }
-    else
-    {
-        hasChatKey = false;
-    }
-
-    // Derive Server Session Key
-    if (!this->serverPassword.empty())
-    {
-        serverSessionKey = FreiaEncryption::deriveKey(this->serverPassword);
-        hasServerKey = true;
-    }
-    else
-    {
-        hasServerKey = false;
-    }
+    hasChatKey   = !this->chatPassword.empty();
+    hasServerKey = !this->serverPassword.empty();
 
     return hasChatKey && hasServerKey;
 }
-
 void ClientConnect::handleProtocolPacket(const std::string& encryptedData)
 {
     std::string plaintext =
@@ -293,28 +283,14 @@ void ClientConnect::handleProtocolPacket(const std::string& encryptedData)
     }
 }
 
-
-
-std::vector<std::string> ClientConnect::splitByNewline(const std::string& s)
-{
-    std::vector<std::string> out;
-    std::string current;
-
-    for (char c : s)
-    {
-        if (c == '\n')
-        {
-            out.push_back(current);
-            current.clear();
-        }
-        else
-        {
-            current += c;
+std::vector<std::string> ClientConnect::splitByNewline(const std::string& s) {
+    std::vector<std::string> lines;
+    std::string line;
+    std::istringstream iss(s);
+    while (std::getline(iss, line)) {
+        if (!line.empty() || !lines.empty()) {
+            lines.push_back(std::move(line));
         }
     }
-
-    if (!current.empty())
-        out.push_back(current);
-
-    return out;
+    return lines;
 }

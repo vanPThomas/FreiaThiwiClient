@@ -18,18 +18,18 @@ Designed for oppressed, restricted, and privacy-seeking users who deserve safe c
 This project is not a wrapper around an existing library.  
 It is a deep dive into systems programming, networking, and cryptography.
 
-This repo is the client side of the Freia Thiwi Project, the server is not publically available.
+This repo is the client side of the Freia Thiwi Project, the server is not publicly available.
 
 ---
 
 ## Features (planned / in progress)
 
-Client side encryption with a shared private password for symetrical encryption.
-Server encryption to hide user names and protocols.
+Client side encryption with a shared private password for symmetrical encryption.
+Server encryption to hide usernames and protocols.
 Unique protocol system.
 Accounts and users with client side encrypted user data stored on the server but unreadable by the server.
-Password share feature using asymetrical encryption using temporary public and private keys.
-Filesharing.
+Password share feature using asymmetrical encryption using temporary public and private keys.
+File sharing.
 and much more to follow.
 
 ---

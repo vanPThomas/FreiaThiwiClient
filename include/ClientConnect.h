@@ -23,9 +23,22 @@ public:
 
     const std::vector<std::string>& getMessages() const;
     bool isConnectedToServer() const { return isConnected; }
-    bool configure(const char*, const char*, const char*, const char*, const char*);
-
+    bool configure(
+            const char* ip,
+            const char* port,
+            const char* user,
+            const char* chatPassword,
+            const char* serverPassword);
 private:
+
+    struct ConnectionParams {
+        std::string ip;
+        uint16_t    port = 0;
+        std::string user;
+        std::string chat_pw;
+        std::string server_pw;
+    };
+
     void handleSystemCallError(const std::string& errorMsg);
     int createClientSocket(const std::string &serverIP, int serverPort);
     void receiveMessages();
