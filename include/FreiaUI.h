@@ -25,6 +25,7 @@ private:
     void showPopup();
     void openPopup(const std::string& message);
 
+
     static const int bufferSize = 1024;
 
     char inputBuffer[bufferSize] = "";

@@ -3,7 +3,18 @@ All notable changes to **Freia Thiwi Client** will be documented here.
 
 ---
 
+## [0.3.2] - 2026-01-14
+### Changed
+- ClientConnect: Refactored sendMessage function
+- ClientConnect: dedicated PROT1 building function
+- Validation: added username sanitization
+- Validation: improved user name validation
+
+
+---
+
 ## [0.3.1] - 2026-01-13
+### Changed
 - ClientConnect: better parameter handling via ConnectionParams struct
 - ClientConnect: safer newline splitting implementation
 

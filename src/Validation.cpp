@@ -4,6 +4,8 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <cstring>
+#include <string>
+#include <algorithm>
 
 
 bool Validation::isValidIP(const std::string& ip)
@@ -51,10 +53,40 @@ bool Validation::isValidPort(const std::string& portStr)
 
 bool Validation::isValidUser(const std::string& user)
 {
+    // Optional: forbid leading/trailing spaces (common mistake)
+    if (user.front() == ' ' || user.back() == ' ') {
+        return false;
+    }
     return !user.empty() && user.size() <= 32;
+
 }
 
 bool Validation::isValidPassword(const std::string& password)
 {
     return !password.empty() && password.size() <= 128;
+}
+
+std::string Validation::sanitizeUsername(const std::string& input)
+{
+    std::string clean;
+    clean.reserve(input.size());
+
+    for (char c : input) {
+        // Allow only "safe" printable characters
+        // Exclude: backslash (could fake escapes)
+        if (c >= 32 && c <= 126 && c != '\\')
+        {      
+            clean += c;
+        }
+    }
+
+    if (clean.empty()) {
+        return "anonymous";
+    }
+
+    if (clean.size() > 32) {
+        clean.resize(32);
+    }
+
+    return clean;
 }

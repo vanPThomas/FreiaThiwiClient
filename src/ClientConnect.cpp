@@ -143,40 +143,56 @@ void ClientConnect::addMessage(const std::string &message)
 
 void ClientConnect::sendMessage(const std::string& text)
 {
-    if (!isConnected || text.empty())
+    if (!isConnected || text.empty()) {
         return;
+    }
 
-    // 1. Encrypt chat message (E2EE)
+    if (text.size() > 16384) {
+        addMessage("[Error] Message too long");
+        return;
+    }
+
+    // 1. Build & encrypt inner payload
     std::string chatCipher = FreiaEncryption::encryptData(text, sessionKey);
-    if (chatCipher.empty())
-    {
-        addMessage("[Error] Chat encryption failed.");
+    if (chatCipher.empty()) {
+        addMessage("[Error] Failed to encrypt message (E2EE)");
         return;
     }
-    // 2. Build PROT1 frame (plaintext to server)
 
-    std::string frame = "PROT1\n" + user + "\n" + std::to_string(chatCipher.size()) + "\n";
-    frame.append(chatCipher);
+    std::string frame = buildProt1Frame(chatCipher);
 
-    // 3. Encrypt with SERVER password (transport layer)
+    // 2. Encrypt for transport
     std::string transportCipher = FreiaEncryption::encryptData(frame, serverSessionKey);
-
-    if (transportCipher.empty())
-    {
-        addMessage("[Error] Server-layer encryption failed.");
+    if (transportCipher.empty()) {
+        addMessage("[Error] Failed to encrypt message (transport)");
         return;
     }
 
-    // 4. Length prefix + send
-
+    // 3. Send with length prefix
     uint32_t len = transportCipher.size();
-    uint32_t netLen = htonl(len); // convert to network byte order
+    uint32_t netLen = htonl(len);
 
-    send(clientSocket, &netLen, sizeof(netLen), 0);
-    send(clientSocket, transportCipher.data(), transportCipher.size(), 0);
+    if (send(clientSocket, &netLen, sizeof(netLen), 0) != sizeof(netLen) ||
+        send(clientSocket, transportCipher.data(), transportCipher.size(), 0) != static_cast<ssize_t>(transportCipher.size())) {
+        addMessage("[Error] Failed to send to server");
+        isConnected = false;
+        return;
+    }
 
-    // 5. Local echo (PLAINTEXT)
+    // 4. Local echo
     addMessage(user + ": " + text);
+    return;
+}
+
+std::string ClientConnect::buildProt1Frame(const std::string& ciphertext) const
+{
+    std::string frame = "PROT1\n";
+    frame += user;
+    frame += '\n';
+    frame += std::to_string(ciphertext.size());
+    frame += '\n';
+    frame += ciphertext;           // append — no extra copy
+    return frame;
 }
 
 const std::vector<std::string>& ClientConnect::getMessages() const
@@ -194,25 +210,28 @@ bool ClientConnect::configure(
 {
     ConnectionParams p;
 
-    if (!Validation::isValidIP(ip)) return false;
-    if (!Validation::isValidPort(port)) return false;
-    if (!Validation::isValidUser(user)) return false;
-    if (!Validation::isValidPassword(chatPassword)) return false;
+    // Validation checks first (fail early)
+    if (!Validation::isValidIP(ip))          return false;
+    if (!Validation::isValidPort(port))      return false;
+    if (!Validation::isValidUser(user))      return false;
+    if (!Validation::isValidPassword(chatPassword))   return false;
     if (!Validation::isValidPassword(serverPassword)) return false;
 
-    p.ip        = ip ? ip : "";
-    p.port      = port ? std::atoi(port) : 0;
-    p.user      = user ? user : "";
-    p.chat_pw   = chatPassword   ? chatPassword   : "";
-    p.server_pw = serverPassword ? serverPassword : "";
+    // Assign sanitized / safe values
+    p.ip         = ip           ? ip           : "";
+    p.port       = port         ? std::atoi(port) : 0;
+    p.user       = Validation::sanitizeUsername(user ? user : "");
+    p.chat_pw    = chatPassword ? chatPassword : "";
+    p.server_pw  = serverPassword ? serverPassword : "";
 
+    // Move into member variables
     this->ip             = std::move(p.ip);
     this->port           = p.port;
     this->user           = std::move(p.user);
     this->chatPassword   = std::move(p.chat_pw);
     this->serverPassword = std::move(p.server_pw);
 
-    // derive keys
+    // Derive keys from the cleaned values
     sessionKey       = FreiaEncryption::deriveKey(this->chatPassword);
     serverSessionKey = FreiaEncryption::deriveKey(this->serverPassword);
 

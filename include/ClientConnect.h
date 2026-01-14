@@ -45,7 +45,7 @@ private:
     void addMessage(const std::string& message);
     void handleProtocolPacket(const std::string& encryptedData);
     std::vector<std::string> splitByNewline(const std::string& s);
-
+    std::string buildProt1Frame(const std::string& ciphertext) const;
 
     int clientSocket = -1;
     bool isConnected = false;
