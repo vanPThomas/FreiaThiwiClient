@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to **Freia Thiwi Client** will be documented here.
 
+## [0.3.3] - 2026-01-14
+### Changed
+- FreiaUI: Cleaned up UI for better user experience
+
 ---
 
 ## [0.3.2] - 2026-01-14

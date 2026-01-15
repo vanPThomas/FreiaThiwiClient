@@ -35,7 +35,7 @@ FreiaUI::FreiaUI()
     {
         std::cerr << "Failed to load font\n";
     }
-    ImGui::GetIO().FontGlobalScale = 2.0f;  // 200% scaling
+    ImGui::GetIO().FontGlobalScale = 1.0f;  // 100% scaling
 }
 
 FreiaUI::~FreiaUI()
@@ -85,28 +85,40 @@ bool FreiaUI::render()
 
 void FreiaUI::renderConnectionPanel()
 {
-    const float labelWidth = 420.0f;
+    ImGui::SetNextWindowPos(ImVec2(50, 50),  ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSizeConstraints(
+    ImVec2(530, 230),           // min size
+    ImVec2(FLT_MAX, FLT_MAX));    // max size (unlimited)
+    ImGui::SetNextWindowSize(ImVec2(530, 280), ImGuiCond_FirstUseEver);
+
+    const float labelWidth = 220.0f;
+    const float inputWidth = 300.0f;
     ImGui::Begin("Connection Data");
 
     ImGui::Text("IP: ");
     ImGui::SameLine(labelWidth);
-    ImGui::InputText("##IP", IP, IM_ARRAYSIZE(IP));
+    ImGui::SetNextItemWidth(inputWidth);
+    ImGui::InputTextWithHint("##IP", "e.g. 192.168.1.100", IP, IM_ARRAYSIZE(IP));
 
     ImGui::Text("Port: ");
     ImGui::SameLine(labelWidth);
-    ImGui::InputText("##PORT", Port, IM_ARRAYSIZE(Port));
+    ImGui::SetNextItemWidth(inputWidth);
+    ImGui::InputTextWithHint("##PORT", "e.g. 8080", Port, IM_ARRAYSIZE(Port));
 
     ImGui::Text("User Name: ");
     ImGui::SameLine(labelWidth);
-    ImGui::InputText("##USERNAME", User, IM_ARRAYSIZE(User));
+    ImGui::SetNextItemWidth(inputWidth);
+    ImGui::InputTextWithHint("##USERNAME", "Your display name", User, IM_ARRAYSIZE(User));
 
     ImGui::Text("Encryption Password: ");
     ImGui::SameLine(labelWidth);
-    ImGui::InputText("##ENCPASS", ChatPassword, IM_ARRAYSIZE(ChatPassword));
+    ImGui::SetNextItemWidth(inputWidth);
+    ImGui::InputTextWithHint("##ENCPASS", "Shared chat secret", ChatPassword, IM_ARRAYSIZE(ChatPassword), ImGuiInputTextFlags_Password);
 
     ImGui::Text("Server Password:");
     ImGui::SameLine(labelWidth);
-    ImGui::InputText("##SERVERPASS", ServerPassword, IM_ARRAYSIZE(ServerPassword));
+    ImGui::SetNextItemWidth(inputWidth);
+    ImGui::InputTextWithHint("##SERVERPASS", "Server access password", ServerPassword, IM_ARRAYSIZE(ServerPassword), ImGuiInputTextFlags_Password);
 
     if (!client || !client->isConnectedToServer())
     {
@@ -122,6 +134,9 @@ void FreiaUI::renderConnectionPanel()
 
 void FreiaUI::renderChatPanel()
 {
+    ImGui::SetNextWindowPos(ImVec2(50, 350), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(600, 600), ImGuiCond_FirstUseEver);
+
     ImGui::Begin("Chat Window");
 
     ImGui::BeginChild("ChatArea", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), true);
@@ -131,7 +146,10 @@ void FreiaUI::renderChatPanel()
         for (const auto& msg : messages)
             ImGui::TextUnformatted(msg.c_str());
 
-        ImGui::SetScrollHereY(1.0f);
+        // Auto-scroll only if user is already at bottom
+        if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY() - 1.0f) {
+            ImGui::SetScrollHereY(1.0f);
+        }
     }
     ImGui::EndChild();
 
