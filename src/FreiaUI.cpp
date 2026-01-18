@@ -1,8 +1,14 @@
 #include "FreiaUI.h"
 #include "Validation.h"
-#include <iostream>
-#include <cstring>
-#include <cctype>
+
+int FreiaUI::theme = 2;
+
+const ImVec4 FreiaUI::themes[] = {
+    ImVec4(1.0f, 0.0f, 0.5f, 1.0f),    // pink
+    ImVec4(1.0f, 0.67f, 0.0f, 1.0f),   // amber
+    ImVec4(0.0f, 1.0f, 0.25f, 1.0f)   // green
+    // add your others
+};
 
 FreiaUI::FreiaUI()
 {
@@ -31,6 +37,7 @@ FreiaUI::FreiaUI()
     ImGui_ImplOpenGL3_Init("#version 130");
 
     customFont = io->Fonts->AddFontFromFileTTF("fonts/Px437_IBM_VGA_8x14.ttf", 18.0f);
+
     if (!customFont)
     {
         std::cerr << "Failed to load font\n";
@@ -62,7 +69,7 @@ bool FreiaUI::render()
     showPopup();
 
     ImGui::PushFont(customFont);
-    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.5f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_Text, themes[theme]);
 
     renderMenuBar();
     renderConnectionPanel();
@@ -94,7 +101,7 @@ void FreiaUI::renderConnectionPanel()
     const float labelWidth = 220.0f;
     const float inputWidth = 300.0f;
     ImGui::Begin("Connection Data");
-
+    
     ImGui::Text("IP: ");
     ImGui::SameLine(labelWidth);
     ImGui::SetNextItemWidth(inputWidth);
@@ -143,8 +150,12 @@ void FreiaUI::renderChatPanel()
     if (client)
     {
         const auto& messages = client->getMessages();
+        ImGui::PushTextWrapPos(0.0f);
         for (const auto& msg : messages)
+        {
             ImGui::TextUnformatted(msg.c_str());
+        }
+        ImGui::PopTextWrapPos();
 
         // Auto-scroll only if user is already at bottom
         if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY() - 1.0f) {
@@ -152,7 +163,6 @@ void FreiaUI::renderChatPanel()
         }
     }
     ImGui::EndChild();
-
     if (focusInput)
     {
         ImGui::SetKeyboardFocusHere();
@@ -257,6 +267,7 @@ void FreiaUI::clearInputFields()
     std::memset(User, 0, sizeof(User));
     std::memset(ChatPassword, 0, sizeof(ChatPassword));
     std::memset(inputBuffer, 0, sizeof(inputBuffer));
+    std::memset(ServerPassword, 0, sizeof(ServerPassword));
 }
 
 void FreiaUI::renderMenuBar()
@@ -264,7 +275,7 @@ void FreiaUI::renderMenuBar()
     //ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ImVec4(0.15f, 0.05f, 0.07f, 1.0f)); // darker/pinkish
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
-    ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1, 0, 0.7, 1));
+    ImGui::PushStyleColor(ImGuiCol_Border, themes[theme]);
 
     if (ImGui::BeginMainMenuBar())
     {

@@ -1,7 +1,13 @@
 # Changelog
 All notable changes to **Freia Thiwi Client** will be documented here.
 
-## [0.3.3] - 2026-01-14
+## [0.3.4] - 2026-01-18
+### Changed
+- FreiaUI: Proper text wrapping in the chat window
+
+---
+
+## [0.3.3] - 2026-01-15
 ### Changed
 - FreiaUI: Cleaned up UI for better user experience
 

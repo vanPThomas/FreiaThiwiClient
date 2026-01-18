@@ -4,6 +4,9 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include <GLFW/glfw3.h>
+#include <iostream>
+#include <cstring>
+#include <cctype>
 
 class FreiaUI
 {
@@ -46,4 +49,8 @@ private:
     //Popup Variables
     std::string popupMessage;
     bool popupOpen = false;
+
+    // UI color
+    static int theme;
+    static const ImVec4 themes[];
 };
