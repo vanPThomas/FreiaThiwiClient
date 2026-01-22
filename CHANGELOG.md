@@ -1,6 +1,25 @@
 # Changelog
 All notable changes to **Freia Thiwi Client** will be documented here.
 
+## [v0.4.0] - 2026-01-22
+
+### Added
+- Encrypted handshake (PROT2) sent immediately after TCP connect
+  - Contains username, encrypted with serverSessionKey
+  - Waits synchronously for server's encrypted "PROT2" reply
+- Full server authentication verification
+  - Connection only succeeds if server reply decrypts correctly and contains expected "OK"
+  - Clear error messages on failure ("wrong server password?", incomplete reply, etc.)
+- Handshake is now the first step — normal chat messages (PROT1) only sent after successful auth
+
+### Changed
+- `connectToServer()` now performs full handshake before starting receive thread
+- Improved connection feedback in chat window during auth phase
+
+### Security
+- Username never appears in plaintext on the wire
+- Immediate failure feedback if server password is incorrect
+
 ## [0.3.4] - 2026-01-18
 ### Changed
 - FreiaUI: Proper text wrapping in the chat window

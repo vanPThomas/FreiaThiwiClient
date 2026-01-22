@@ -69,12 +69,84 @@ int ClientConnect::createClientSocket(const std::string &serverIP, int serverPor
 
 bool ClientConnect::connectToServer()
 {
+    if (!hasServerKey) {
+        addMessage("[Error] No server password set");
+        return false;
+    }
+
+    // 1. build and encrypt the package
+    std::string frame = buildProt2Frame();
+    std::string transportCipher = FreiaEncryption::encryptData(frame, serverSessionKey);
+    if (transportCipher.empty()) {
+        addMessage("[Error] Failed to encrypt handshake (transport)");
+        return false;
+    }
+
+    // 2. connect TCP
     clientSocket = createClientSocket(ip, port);
     if (clientSocket == -1)
         return false;
 
+    // 3. Send handshake with length prefix
+    uint32_t len = transportCipher.size();
+    uint32_t netLen = htonl(len);
+    if (send(clientSocket, &netLen, sizeof(netLen), 0) != sizeof(netLen) ||
+        send(clientSocket, transportCipher.data(), transportCipher.size(), 0) != static_cast<ssize_t>(transportCipher.size())) {
+        addMessage("[Error] Failed to send handshake to server");
+        disconnect();
+        return false;
+    }
+
+    addMessage("[Info] Handshake sent, waiting for server authentication...");
+
+    // 4. Wait for server's reply (welcome / OK packet) — blocking read here
+    uint32_t replyLenNet = 0;
+    int r = recv(clientSocket, &replyLenNet, sizeof(replyLenNet), MSG_WAITALL);
+    if (r != sizeof(replyLenNet)) {
+        addMessage("[Auth failed] Server did not respond or connection dropped");
+        disconnect();
+        return false;
+    }
+
+    uint32_t replyLen = ntohl(replyLenNet);
+    if (replyLen == 0 || replyLen > 65536) {  // reasonable max for small reply
+        addMessage("[Auth failed] Invalid reply length from server");
+        disconnect();
+        return false;
+    }
+
+    std::string replyCipher(replyLen, '\0');
+    r = recv(clientSocket, replyCipher.data(), replyLen, MSG_WAITALL);
+    if (r != static_cast<int>(replyLen)) {
+        addMessage("[Auth failed] Incomplete server reply");
+        disconnect();
+        return false;
+    }
+
+    // 6. Decrypt server's reply
+    std::string replyPlain = FreiaEncryption::decryptData(replyCipher, serverSessionKey);
+    if (replyPlain.empty()) {
+        addMessage("[Auth failed] Server reply decryption failed - wrong server password?");
+        disconnect();
+        return false;
+    }
+
+    // 7. Check content (minimal check — just starts with "OK" or exact match)
+    if (replyPlain != "PROT2" && !replyPlain.starts_with("PROT2\n")) {
+        addMessage("[Auth failed] Invalid server response: " + replyPlain.substr(0, 50));
+        disconnect();
+        return false;
+    }
+
+    // Success!
+    addMessage("[Connected & authenticated]");
     isConnected = true;
+    std::vector<std::string> lines = splitByNewline(replyPlain);
+    addMessage(lines[1]);
+
+    // Now safe to start background receive thread for normal messages
     std::thread(&ClientConnect::receiveMessages, this).detach();
+
     return true;
 }
 
@@ -189,9 +261,16 @@ std::string ClientConnect::buildProt1Frame(const std::string& ciphertext) const
     std::string frame = "PROT1\n";
     frame += user;
     frame += '\n';
-    frame += std::to_string(ciphertext.size());
+    frame += std::to_string(ciphertext.size()); // ciphertext size
     frame += '\n';
     frame += ciphertext;           // append — no extra copy
+    return frame;
+}
+
+std::string ClientConnect::buildProt2Frame() const
+{
+    std::string frame = "PROT2\n";
+    frame += user;
     return frame;
 }
 
