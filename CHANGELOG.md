@@ -1,8 +1,11 @@
 # Changelog
 All notable changes to **Freia Thiwi Client** will be documented here.
 
-## [v0.4.0] - 2026-01-22
+## [v0.4.1] - 2026-01-23
+### Added
+- Added PROT3 recognition for server messages
 
+## [v0.4.0] - 2026-01-22
 ### Added
 - Encrypted handshake (PROT2) sent immediately after TCP connect
   - Contains username, encrypted with serverSessionKey

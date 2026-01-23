@@ -375,6 +375,25 @@ void ClientConnect::handleProtocolPacket(const std::string& encryptedData)
 
         addMessage(messageUser + ": " + text);
     }
+    else if (proto == "PROT3")
+    {
+        if (parts.size() < 3) {
+            addMessage("[Protocol error] Malformed PROT3");
+            return;
+        }
+
+        const std::string& msgType = parts[1];
+        const std::string& msgText = parts[2];
+
+        // For now we only care about userDisconnected, but room for future types
+        if (msgType == "userDisconnected") {
+            addMessage("[Server] " + msgText);
+        }
+        else {
+            // Generic fallback for future message types
+            addMessage("[Server notice] " + msgText + " (" + msgType + ")");
+        }
+    }
     else
     {
         addMessage("[Unknown protocol] " + proto);
