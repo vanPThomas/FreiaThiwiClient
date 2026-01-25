@@ -27,6 +27,8 @@ private:
     void renderMenuBar();
     void showPopup();
     void openPopup(const std::string& message);
+    void renderOptions();
+
 
 
     static const int bufferSize = 1024;
@@ -40,6 +42,7 @@ private:
 
     bool focusInput = false;
     bool quitRequested = false;
+    bool openOptions = false;
 
     ClientConnect* client = nullptr;
     ImGuiIO* io = nullptr;
@@ -51,6 +54,9 @@ private:
     bool popupOpen = false;
 
     // UI color
-    static int theme;
-    static const ImVec4 themes[];
+    static int theme;                          // current theme index
+    static const ImVec4 themes[];              // array of accent colors
+    static const char* themeNames[];           // human-readable names for combo
+    static constexpr int NUM_THEMES = 9;      // update when adding more
+
 };

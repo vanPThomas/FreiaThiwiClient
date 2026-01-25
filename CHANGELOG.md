@@ -1,6 +1,11 @@
 # Changelog
 All notable changes to **Freia Thiwi Client** will be documented here.
 
+## [v0.4.2] - 2026-01-25
+### Added
+- FreiaUI: added an options menu in the menu bar
+- FreiaUI: Added themed colors
+
 ## [v0.4.1] - 2026-01-23
 ### Added
 - Added PROT3 recognition for server messages

@@ -5,9 +5,26 @@ int FreiaUI::theme = 2;
 
 const ImVec4 FreiaUI::themes[] = {
     ImVec4(1.0f, 0.0f, 0.5f, 1.0f),    // pink
+    ImVec4(1.00f, 0.43f, 0.71f, 1.00f),  // Soft Pink / Magenta
     ImVec4(1.0f, 0.67f, 0.0f, 1.0f),   // amber
-    ImVec4(0.0f, 1.0f, 0.25f, 1.0f)   // green
-    // add your others
+    ImVec4(1.00f, 0.67f, 0.00f, 1.00f),  // Warm Amber / Gold
+    ImVec4(0.0f, 1.0f, 0.25f, 1.0f),   // green
+    ImVec4(0.22f, 0.89f, 0.44f, 1.00f),  // Fresh Green
+    ImVec4(0.00f, 0.78f, 0.78f, 1.00f),  // DOS White – Cyan/Teal accent (classic IBM PC CGA/EGA highlight color)
+    ImVec4(0.18f, 0.62f, 0.95f, 1.00f), // Calm Blue
+    ImVec4(0.80f, 0.20f, 0.20f, 1.00f), // Deep Red
+};
+    const char* FreiaUI::themeNames[] = {
+    "Pink",
+    "Soft Pink",
+    "Amber",
+    "Warm Amber",
+    "Green",
+    "Fresh Green",
+    "DOS White",
+    "Calm Blue",
+    "Deep Red",
+    // "Blue", "Red", ... when you add more
 };
 
 FreiaUI::FreiaUI()
@@ -74,6 +91,11 @@ bool FreiaUI::render()
     renderMenuBar();
     renderConnectionPanel();
     renderChatPanel();
+
+    if (openOptions)
+    {
+        renderOptions();
+    }
 
     ImGui::PopStyleColor();
     ImGui::PopFont();
@@ -281,6 +303,7 @@ void FreiaUI::renderMenuBar()
     {
         if (ImGui::BeginMenu("Application"))
         {
+            if (ImGui::MenuItem("Options")) openOptions = true;
             if (ImGui::MenuItem("Exit")) quitRequested = true;
             ImGui::EndMenu();
         }
@@ -315,4 +338,48 @@ void FreiaUI::showPopup()
 
         ImGui::EndPopup();
     }
+}
+
+void FreiaUI::renderOptions()
+{
+    if (!openOptions) return;
+    ImGui::SetNextWindowPos(ImVec2(50, 650), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(220, 180), ImGuiCond_FirstUseEver);  // a bit wider for combo
+
+    ImGui::Begin("Options", &openOptions, ImGuiWindowFlags_NoCollapse);
+
+    ImGui::Text("Color Theme");
+
+    // Dropdown / combo box
+    if (ImGui::BeginCombo("##ThemeCombo", themeNames[theme]))
+    {
+        for (int i = 0; i < NUM_THEMES; ++i)
+        {
+            bool isSelected = (theme == i);
+            if (ImGui::Selectable(themeNames[i], isSelected))
+            {
+                theme = i;
+                // applyTheme();  // apply immediately
+            }
+            if (isSelected)
+                ImGui::SetItemDefaultFocus();
+        }
+        ImGui::EndCombo();
+    }
+
+    // Optional: small preview swatch next to combo
+    ImGui::SameLine();
+    ImGui::ColorButton("##ThemePreview", themes[theme], ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoTooltip);
+
+    ImGui::Separator();
+
+    // Future options can go here (font size, language, etc.)
+    ImGui::TextDisabled("(More settings coming soon)");
+
+    if (ImGui::Button("Close"))
+    {
+        openOptions = false;
+    }
+
+    ImGui::End();
 }
