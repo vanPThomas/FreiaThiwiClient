@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <cstring>
 #include "FreiaEncryption.h"
+#include <unordered_set>
 
 
 class ClientConnect
@@ -29,6 +30,14 @@ public:
             const char* user,
             const char* chatPassword,
             const char* serverPassword);
+    const std::unordered_set<std::string>& getOnlineUsers() const {
+        return onlineUsers;
+    }
+
+    const bool getIsConnected() const {
+        return isConnected;
+    }
+    
 private:
 
     struct ConnectionParams {
@@ -66,4 +75,7 @@ private:
     FreiaEncryption::Key serverSessionKey{};    //Transport
     bool hasChatKey = false;
     bool hasServerKey = false;
+
+    std::unordered_set<std::string> onlineUsers;
+    bool showUserList = true;  // toggle in UI
 };

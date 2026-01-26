@@ -383,15 +383,41 @@ void ClientConnect::handleProtocolPacket(const std::string& encryptedData)
         }
 
         const std::string& msgType = parts[1];
-        const std::string& msgText = parts[2];
+        const std::string& payload = parts[2];   // this is the actual content after the type
 
-        // For now we only care about userDisconnected, but room for future types
-        if (msgType == "userDisconnected") {
-            addMessage("[Server] " + msgText);
+        if (msgType == "userList")
+        {
+            onlineUsers.clear();
+            auto names = splitByNewline(payload);   // ← use payload here
+            for (const auto& name : names) {
+                if (!name.empty()) {
+                    onlineUsers.insert(name);
+                }
+            }
+            addMessage("[User list received — " + std::to_string(onlineUsers.size()) + " online]");
+        }
+        else if (msgType == "userJoined")
+        {
+            if (!payload.empty())
+            {
+                onlineUsers.insert(payload);
+                addMessage("[Joined] " + payload);
+            }
+        }
+        else if (msgType == "userLeft")
+        {
+            if (!payload.empty() && onlineUsers.erase(payload))
+            {
+                addMessage("[Left] " + payload);
+            }
+        }
+        else if (msgType == "userDisconnected") {
+            // your existing disconnect message
+            addMessage("[Server] " + payload);
         }
         else {
-            // Generic fallback for future message types
-            addMessage("[Server notice] " + msgText + " (" + msgType + ")");
+            // fallback for any other server notice
+            addMessage("[Server notice] " + payload + " (" + msgType + ")");
         }
     }
     else

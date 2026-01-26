@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to **Freia Thiwi Client** will be documented here.
 
+## [v0.4.3] - 2026-01-26
+### Added
+- Added element that shows what people are connected to the server
+
 ## [v0.4.2] - 2026-01-25
 ### Added
 - FreiaUI: added an options menu in the menu bar

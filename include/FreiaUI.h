@@ -28,7 +28,7 @@ private:
     void showPopup();
     void openPopup(const std::string& message);
     void renderOptions();
-
+    void renderUserList();
 
 
     static const int bufferSize = 1024;
@@ -59,4 +59,6 @@ private:
     static const char* themeNames[];           // human-readable names for combo
     static constexpr int NUM_THEMES = 9;      // update when adding more
 
+    std::unordered_set<std::string> onlineUsers;
+    bool showUserList = true;  // toggle in UI
 };
