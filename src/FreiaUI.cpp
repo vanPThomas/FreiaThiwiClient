@@ -258,6 +258,10 @@ void FreiaUI::connectButton()
                 client = nullptr;
                 openPopup("Connection failed. Server unreachable.");
             }
+            else
+            {
+                
+            }
         }
         else
         {

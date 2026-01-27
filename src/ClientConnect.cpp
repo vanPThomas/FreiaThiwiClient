@@ -123,7 +123,7 @@ bool ClientConnect::connectToServer()
         return false;
     }
 
-    // 6. Decrypt server's reply
+    // 5. Decrypt server's reply
     std::string replyPlain = FreiaEncryption::decryptData(replyCipher, serverSessionKey);
     if (replyPlain.empty()) {
         addMessage("[Auth failed] Server reply decryption failed - wrong server password?");
@@ -131,7 +131,7 @@ bool ClientConnect::connectToServer()
         return false;
     }
 
-    // 7. Check content (minimal check — just starts with "OK" or exact match)
+    // 6. Check content (minimal check — just starts with "OK" or exact match)
     if (replyPlain != "PROT2" && !replyPlain.starts_with("PROT2\n")) {
         addMessage("[Auth failed] Invalid server response: " + replyPlain.substr(0, 50));
         disconnect();
