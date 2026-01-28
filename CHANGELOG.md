@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to **Freia Thiwi Client** will be documented here.
 
+## [v0.4.4] - 2026-01-28
+### Fixed
+- - Fixed bug where all online people wasn't properly shown
+
 ## [v0.4.3] - 2026-01-26
 ### Added
 - Added element that shows what people are connected to the server

@@ -383,12 +383,19 @@ void ClientConnect::handleProtocolPacket(const std::string& encryptedData)
         }
 
         const std::string& msgType = parts[1];
-        const std::string& payload = parts[2];   // this is the actual content after the type
+        const std::string& payload = parts[2];
 
         if (msgType == "userList")
         {
+            std::string payloadList;
+            for (size_t i = 2; i < parts.size(); ++i) {
+                if (i > 2) payloadList += "\n";
+                payloadList += parts[i];
+            }
+            std::cout << "TESTTEST!" << "\n";
+            std::cout << "Payload: " << payloadList << "\n";
             onlineUsers.clear();
-            auto names = splitByNewline(payload);   // ← use payload here
+            auto names = splitByNewline(payloadList);
             for (const auto& name : names) {
                 if (!name.empty()) {
                     onlineUsers.insert(name);
