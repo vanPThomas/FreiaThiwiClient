@@ -53,7 +53,6 @@ bool Validation::isValidPort(const std::string& portStr)
 
 bool Validation::isValidUser(const std::string& user)
 {
-    // Optional: forbid leading/trailing spaces (common mistake)
     if (user.front() == ' ' || user.back() == ' ') {
         return false;
     }
@@ -72,8 +71,6 @@ std::string Validation::sanitizeUsername(const std::string& input)
     clean.reserve(input.size());
 
     for (char c : input) {
-        // Allow only "safe" printable characters
-        // Exclude: backslash (could fake escapes)
         if (c >= 32 && c <= 126 && c != '\\')
         {      
             clean += c;

@@ -263,7 +263,7 @@ std::string ClientConnect::buildProt1Frame(const std::string& ciphertext) const
     frame += '\n';
     frame += std::to_string(ciphertext.size()); // ciphertext size
     frame += '\n';
-    frame += ciphertext;           // append — no extra copy
+    frame += ciphertext;
     return frame;
 }
 

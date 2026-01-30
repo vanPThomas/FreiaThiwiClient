@@ -10,7 +10,7 @@ const ImVec4 FreiaUI::themes[] = {
     ImVec4(1.00f, 0.67f, 0.00f, 1.00f),  // Warm Amber / Gold
     ImVec4(0.0f, 1.0f, 0.25f, 1.0f),   // green
     ImVec4(0.22f, 0.89f, 0.44f, 1.00f),  // Fresh Green
-    ImVec4(0.00f, 0.78f, 0.78f, 1.00f),  // DOS White – Cyan/Teal accent (classic IBM PC CGA/EGA highlight color)
+    ImVec4(0.00f, 0.78f, 0.78f, 1.00f),  // DOS White – Cyan/Teal accent
     ImVec4(0.18f, 0.62f, 0.95f, 1.00f), // Calm Blue
     ImVec4(0.80f, 0.20f, 0.20f, 1.00f), // Deep Red
 };
@@ -24,7 +24,6 @@ const ImVec4 FreiaUI::themes[] = {
     "DOS White",
     "Calm Blue",
     "Deep Red",
-    // "Blue", "Red", ... when you add more
 };
 
 FreiaUI::FreiaUI()
@@ -241,12 +240,6 @@ void FreiaUI::connectButton()
             return;
         }
 
-        // Create new client
-        // if (client)
-        // {
-        //     delete client;
-        //     client = nullptr;
-        // }
         client = new ClientConnect();
         
         // Network-side validation
@@ -299,7 +292,6 @@ void FreiaUI::clearInputFields()
 
 void FreiaUI::renderMenuBar()
 {
-    //ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ImVec4(0.15f, 0.05f, 0.07f, 1.0f)); // darker/pinkish
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
     ImGui::PushStyleColor(ImGuiCol_Border, themes[theme]);
@@ -349,7 +341,7 @@ void FreiaUI::renderOptions()
 {
     if (!openOptions) return;
     ImGui::SetNextWindowPos(ImVec2(50, 650), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(220, 180), ImGuiCond_FirstUseEver);  // a bit wider for combo
+    ImGui::SetNextWindowSize(ImVec2(220, 180), ImGuiCond_FirstUseEver);
 
     ImGui::Begin("Options", &openOptions, ImGuiWindowFlags_NoCollapse);
 
@@ -364,7 +356,6 @@ void FreiaUI::renderOptions()
             if (ImGui::Selectable(themeNames[i], isSelected))
             {
                 theme = i;
-                // applyTheme();  // apply immediately
             }
             if (isSelected)
                 ImGui::SetItemDefaultFocus();
@@ -372,7 +363,6 @@ void FreiaUI::renderOptions()
         ImGui::EndCombo();
     }
 
-    // Optional: small preview swatch next to combo
     ImGui::SameLine();
     ImGui::ColorButton("##ThemePreview", themes[theme], ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoTooltip);
 

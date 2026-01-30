@@ -1,22 +1,36 @@
 # Changelog
 All notable changes to **Freia Thiwi Client** will be documented here.
 
+## [v0.4.5] - 2026-01-30
+### Changed
+- Cleaned up code
+
+---
+
 ## [v0.4.4] - 2026-01-28
 ### Fixed
-- - Fixed bug where all online people wasn't properly shown
+- Fixed bug where all online people wasn't properly shown
+
+---
 
 ## [v0.4.3] - 2026-01-26
 ### Added
 - Added element that shows what people are connected to the server
+
+---
 
 ## [v0.4.2] - 2026-01-25
 ### Added
 - FreiaUI: added an options menu in the menu bar
 - FreiaUI: Added themed colors
 
+---
+
 ## [v0.4.1] - 2026-01-23
 ### Added
 - Added PROT3 recognition for server messages
+
+---
 
 ## [v0.4.0] - 2026-01-22
 ### Added
@@ -35,6 +49,8 @@ All notable changes to **Freia Thiwi Client** will be documented here.
 ### Security
 - Username never appears in plaintext on the wire
 - Immediate failure feedback if server password is incorrect
+
+---
 
 ## [0.3.4] - 2026-01-18
 ### Changed

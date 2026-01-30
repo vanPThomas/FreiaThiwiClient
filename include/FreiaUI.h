@@ -57,8 +57,8 @@ private:
     static int theme;                          // current theme index
     static const ImVec4 themes[];              // array of accent colors
     static const char* themeNames[];           // human-readable names for combo
-    static constexpr int NUM_THEMES = 9;      // update when adding more
+    static constexpr int NUM_THEMES = 9;       // update when adding more
 
     std::unordered_set<std::string> onlineUsers;
-    bool showUserList = true;  // toggle in UI
+    bool showUserList = true;
 };

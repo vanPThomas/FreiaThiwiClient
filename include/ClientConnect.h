@@ -79,5 +79,5 @@ private:
     bool hasServerKey = false;
 
     std::unordered_set<std::string> onlineUsers;
-    bool showUserList = true;  // toggle in UI
+    bool showUserList = true;
 };
