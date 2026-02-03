@@ -112,50 +112,188 @@ bool FreiaUI::render()
     return true;
 }
 
+// void FreiaUI::renderConnectionPanel()
+// {
+//     ImGui::SetNextWindowPos(ImVec2(50, 50),  ImGuiCond_FirstUseEver);
+//     ImGui::SetNextWindowSizeConstraints(
+//     ImVec2(530, 230),           // min size
+//     ImVec2(FLT_MAX, FLT_MAX));    // max size (unlimited)
+//     ImGui::SetNextWindowSize(ImVec2(530, 280), ImGuiCond_FirstUseEver);
+
+//     const float labelWidth = 220.0f;
+//     const float inputWidth = 300.0f;
+//     ImGui::Begin("Connection Data");
+    
+//     ImGui::Text("IP: ");
+//     ImGui::SameLine(labelWidth);
+//     ImGui::SetNextItemWidth(inputWidth);
+//     ImGui::InputTextWithHint("##IP", "e.g. 192.168.1.100", IP, IM_ARRAYSIZE(IP));
+
+//     ImGui::Text("Port: ");
+//     ImGui::SameLine(labelWidth);
+//     ImGui::SetNextItemWidth(inputWidth);
+//     ImGui::InputTextWithHint("##PORT", "e.g. 8080", Port, IM_ARRAYSIZE(Port));
+
+//     ImGui::Text("User Name: ");
+//     ImGui::SameLine(labelWidth);
+//     ImGui::SetNextItemWidth(inputWidth);
+//     ImGui::InputTextWithHint("##USERNAME", "Your display name", User, IM_ARRAYSIZE(User));
+
+//     ImGui::Text("Encryption Password: ");
+//     ImGui::SameLine(labelWidth);
+//     ImGui::SetNextItemWidth(inputWidth);
+//     ImGui::InputTextWithHint("##ENCPASS", "Shared chat secret", ChatPassword, IM_ARRAYSIZE(ChatPassword), ImGuiInputTextFlags_Password);
+
+//     ImGui::Text("Server Password:");
+//     ImGui::SameLine(labelWidth);
+//     ImGui::SetNextItemWidth(inputWidth);
+//     ImGui::InputTextWithHint("##SERVERPASS", "Server access password", ServerPassword, IM_ARRAYSIZE(ServerPassword), ImGuiInputTextFlags_Password);
+
+//     if (!client || !client->isConnectedToServer())
+//     {
+//         connectButton();
+//     }
+//     else
+//     {
+//         disconnectButton();
+//     }
+
+//     ImGui::End();
+// }
+
 void FreiaUI::renderConnectionPanel()
 {
-    ImGui::SetNextWindowPos(ImVec2(50, 50),  ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSizeConstraints(
-    ImVec2(530, 230),           // min size
-    ImVec2(FLT_MAX, FLT_MAX));    // max size (unlimited)
-    ImGui::SetNextWindowSize(ImVec2(530, 280), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2(50, 50), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSizeConstraints(ImVec2(530, 230), ImVec2(FLT_MAX, FLT_MAX));
+    ImGui::SetNextWindowSize(ImVec2(530, 320), ImGuiCond_FirstUseEver);  // taller for tabs + extra field
 
-    const float labelWidth = 220.0f;
-    const float inputWidth = 300.0f;
     ImGui::Begin("Connection Data");
-    
-    ImGui::Text("IP: ");
-    ImGui::SameLine(labelWidth);
-    ImGui::SetNextItemWidth(inputWidth);
-    ImGui::InputTextWithHint("##IP", "e.g. 192.168.1.100", IP, IM_ARRAYSIZE(IP));
 
-    ImGui::Text("Port: ");
-    ImGui::SameLine(labelWidth);
-    ImGui::SetNextItemWidth(inputWidth);
-    ImGui::InputTextWithHint("##PORT", "e.g. 8080", Port, IM_ARRAYSIZE(Port));
-
-    ImGui::Text("User Name: ");
-    ImGui::SameLine(labelWidth);
-    ImGui::SetNextItemWidth(inputWidth);
-    ImGui::InputTextWithHint("##USERNAME", "Your display name", User, IM_ARRAYSIZE(User));
-
-    ImGui::Text("Encryption Password: ");
-    ImGui::SameLine(labelWidth);
-    ImGui::SetNextItemWidth(inputWidth);
-    ImGui::InputTextWithHint("##ENCPASS", "Shared chat secret", ChatPassword, IM_ARRAYSIZE(ChatPassword), ImGuiInputTextFlags_Password);
-
-    ImGui::Text("Server Password:");
-    ImGui::SameLine(labelWidth);
-    ImGui::SetNextItemWidth(inputWidth);
-    ImGui::InputTextWithHint("##SERVERPASS", "Server access password", ServerPassword, IM_ARRAYSIZE(ServerPassword), ImGuiInputTextFlags_Password);
-
-    if (!client || !client->isConnectedToServer())
-    {
-        connectButton();
-    }
-    else
-    {
+    if (client && client->getIsConnected()) {
         disconnectButton();
+        ImGui::End();
+        return;
+    }
+
+    // Tabs
+    if (ImGui::BeginTabBar("ConnectionMode", ImGuiTabBarFlags_NoTooltip)) {
+
+        // Tab 1: Login with existing account
+        if (ImGui::BeginTabItem("Login")) {
+            ImGui::Text("Use an existing account");
+
+            const float labelWidth = 220.0f;
+            const float inputWidth = 300.0f;
+
+            ImGui::Text("IP: ");
+            ImGui::SameLine(labelWidth);
+            ImGui::SetNextItemWidth(inputWidth);
+            ImGui::InputTextWithHint("##IP", "e.g. 192.168.1.100", IP, IM_ARRAYSIZE(IP));
+
+            ImGui::Text("Port: ");
+            ImGui::SameLine(labelWidth);
+            ImGui::SetNextItemWidth(inputWidth);
+            ImGui::InputTextWithHint("##PORT", "e.g. 8080", Port, IM_ARRAYSIZE(Port));
+
+            ImGui::Text("User Name: ");
+            ImGui::SameLine(labelWidth);
+            ImGui::SetNextItemWidth(inputWidth);
+            ImGui::InputTextWithHint("##USERNAME", "Your display name", User, IM_ARRAYSIZE(User));
+
+            ImGui::Text("Encryption Password: ");
+            ImGui::SameLine(labelWidth);
+            ImGui::SetNextItemWidth(inputWidth);
+            ImGui::InputTextWithHint("##ENCPASS", "Shared chat secret", ChatPassword, IM_ARRAYSIZE(ChatPassword), ImGuiInputTextFlags_Password);
+
+            ImGui::Text("Account Password: ");
+            ImGui::SameLine(labelWidth);
+            ImGui::SetNextItemWidth(inputWidth);
+            ImGui::InputTextWithHint("##ACCOUNTPASS", "Your account login password", AccountPassword, IM_ARRAYSIZE(AccountPassword), ImGuiInputTextFlags_Password);
+
+            ImGui::Separator();
+            ImGui::Spacing();
+
+            if (ImGui::Button("Connect with Account")) {
+                if (validateLoginFields()) {
+                    client = new ClientConnect();
+                    if (client->configureWithAccount(IP, Port, User, ChatPassword, AccountPassword)) {  // new method you'll add
+                        if (!client->connectToServer()) {
+                            delete client;
+                            client = nullptr;
+                            openPopup("Connection failed. Server unreachable.");
+                        }
+                    } else {
+                        delete client;
+                        client = nullptr;
+                        openPopup("Configuration rejected.");
+                    }
+                }
+            }
+
+            ImGui::EndTabItem();
+        }
+
+        // Tab 2: Create new account
+        if (ImGui::BeginTabItem("Create Account")) {
+            ImGui::Text("Register a new account");
+
+            const float labelWidth = 220.0f;
+            const float inputWidth = 300.0f;
+
+            ImGui::Text("IP: ");
+            ImGui::SameLine(labelWidth);
+            ImGui::SetNextItemWidth(inputWidth);
+            ImGui::InputTextWithHint("##IP", "e.g. 192.168.1.100", IP, IM_ARRAYSIZE(IP));
+
+            ImGui::Text("Port: ");
+            ImGui::SameLine(labelWidth);
+            ImGui::SetNextItemWidth(inputWidth);
+            ImGui::InputTextWithHint("##PORT", "e.g. 8080", Port, IM_ARRAYSIZE(Port));
+
+            ImGui::Text("User Name: ");
+            ImGui::SameLine(labelWidth);
+            ImGui::SetNextItemWidth(inputWidth);
+            ImGui::InputTextWithHint("##USERNAME", "Choose a username", User, IM_ARRAYSIZE(User));
+
+            ImGui::Text("Encryption Password: ");
+            ImGui::SameLine(labelWidth);
+            ImGui::SetNextItemWidth(inputWidth);
+            ImGui::InputTextWithHint("##ENCPASS", "Shared chat secret", ChatPassword, IM_ARRAYSIZE(ChatPassword), ImGuiInputTextFlags_Password);
+
+            ImGui::Text("Account Password: ");
+            ImGui::SameLine(labelWidth);
+            ImGui::SetNextItemWidth(inputWidth);
+            ImGui::InputTextWithHint("##ACCOUNTPASS", "Choose account password", AccountPassword, IM_ARRAYSIZE(AccountPassword), ImGuiInputTextFlags_Password);
+
+            ImGui::Text("Confirm Password: ");
+            ImGui::SameLine(labelWidth);
+            ImGui::SetNextItemWidth(inputWidth);
+            ImGui::InputTextWithHint("##CONFIRMPASS", "Repeat account password", ConfirmAccountPassword, IM_ARRAYSIZE(ConfirmAccountPassword), ImGuiInputTextFlags_Password);
+
+            ImGui::Separator();
+            ImGui::Spacing();
+
+            if (ImGui::Button("Create & Connect")) {
+                if (validateCreateFields()) {
+                    client = new ClientConnect();
+                    if (client->configureForCreate(IP, Port, User, ChatPassword, AccountPassword)) {  // new method
+                        if (!client->connectToServer()) {  // server will handle creation
+                            delete client;
+                            client = nullptr;
+                            openPopup("Connection/creation failed.");
+                        }
+                    } else {
+                        delete client;
+                        client = nullptr;
+                        openPopup("Invalid fields for creation.");
+                    }
+                }
+            }
+
+            ImGui::EndTabItem();
+        }
+
+        ImGui::EndTabBar();
     }
 
     ImGui::End();
@@ -398,4 +536,22 @@ void FreiaUI::renderUserList()
     {
         ImGui::TextDisabled("Not connected");
     }
+}
+
+bool FreiaUI::validateLoginFields() {
+    if (!Validation::isValidIP(IP))            { openPopup("Invalid IP."); return false; }
+    if (!Validation::isValidPort(Port))        { openPopup("Invalid Port."); return false; }
+    if (!Validation::isValidUser(User))        { openPopup("Invalid username."); return false; }
+    if (!Validation::isValidPassword(ChatPassword)) { openPopup("Invalid chat password."); return false; }
+    if (!Validation::isValidPassword(AccountPassword)) { openPopup("Invalid account password."); return false; }
+    return true;
+}
+
+bool FreiaUI::validateCreateFields() {
+    if (!validateLoginFields()) return false;  // reuse common checks
+    if (strcmp(AccountPassword, ConfirmAccountPassword) != 0) {
+        openPopup("Account passwords do not match.");
+        return false;
+    }
+    return true;
 }

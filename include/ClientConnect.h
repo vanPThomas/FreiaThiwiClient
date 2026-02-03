@@ -32,11 +32,27 @@ public:
             const char* user,
             const char* chatPassword,
             const char* serverPassword);
+
+    bool configureWithAccount(
+        const char* ip,
+        const char* port,
+        const char* user,
+        const char* chatPassword,
+        const char* accountPassword);
+
+    bool configureForCreate(
+        const char* ip,
+        const char* port,
+        const char* user,
+        const char* chatPassword,
+        const char* accountPassword);
+
+    
     const std::unordered_set<std::string>& getOnlineUsers() const {
         return onlineUsers;
     }
 
-    const bool getIsConnected() const {
+    bool getIsConnected() const {
         return isConnected;
     }
     

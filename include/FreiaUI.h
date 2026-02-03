@@ -29,7 +29,8 @@ private:
     void openPopup(const std::string& message);
     void renderOptions();
     void renderUserList();
-
+    bool validateLoginFields();
+    bool validateCreateFields();
 
     static const int bufferSize = 1024;
 
@@ -39,6 +40,8 @@ private:
     char User[50] = "";
     char ChatPassword[1000] = "";
     char ServerPassword[1000] = "";
+    char AccountPassword[128] = "";
+    char ConfirmAccountPassword[128] = "";
 
     bool focusInput = false;
     bool quitRequested = false;

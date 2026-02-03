@@ -444,3 +444,19 @@ std::vector<std::string> ClientConnect::splitByNewline(const std::string& s) {
     }
     return lines;
 }
+
+bool ClientConnect::configureWithAccount(
+    const char* ip, const char* port, const char* user,
+    const char* chatPassword, const char* accountPassword)
+{
+    // TODO: implement account login
+    return configure(ip, port, user, chatPassword, ""); // fallback to old configure for now
+}
+
+bool ClientConnect::configureForCreate(
+    const char* ip, const char* port, const char* user,
+    const char* chatPassword, const char* accountPassword)
+{
+    // TODO: implement account creation
+    return configure(ip, port, user, chatPassword, ""); // fallback
+}
