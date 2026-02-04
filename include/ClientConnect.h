@@ -38,6 +38,7 @@ public:
         const char* port,
         const char* user,
         const char* chatPassword,
+        const char* serverPassword,
         const char* accountPassword);
 
     bool configureForCreate(
@@ -45,6 +46,7 @@ public:
         const char* port,
         const char* user,
         const char* chatPassword,
+        const char* serverPassword,
         const char* accountPassword);
 
     
@@ -60,10 +62,19 @@ private:
 
     struct ConnectionParams {
         std::string ip;
-        uint16_t    port = 0;
+        uint16_t port = 0;
         std::string user;
         std::string chat_pw;
         std::string server_pw;
+    };
+
+    struct ConnectionParamsWithAccount {
+        std::string ip;
+        uint16_t port = 0;
+        std::string user;
+        std::string chat_pw;
+        std::string server_pw;
+        std::string account_pw;
     };
 
     void handleSystemCallError(const std::string& errorMsg);
@@ -86,13 +97,16 @@ private:
     std::string user;
     std::string chatPassword;
     std::string serverPassword;
+    std::string accountPassword;
 
     const int bufferSize = 10240;
 
     FreiaEncryption::Key sessionKey{};          //E2EE
     FreiaEncryption::Key serverSessionKey{};    //Transport
+    FreiaEncryption::Key accountSessionKey{};   //account
     bool hasChatKey = false;
     bool hasServerKey = false;
+    bool hasAccountKey = false;
 
     std::unordered_set<std::string> onlineUsers;
     bool showUserList = true;

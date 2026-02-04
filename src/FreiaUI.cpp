@@ -172,7 +172,7 @@ void FreiaUI::renderConnectionPanel()
     if (client && client->getIsConnected()) {
         disconnectButton();
         ImGui::End();
-        return;
+        return; 
     }
 
     // Tabs
@@ -204,6 +204,11 @@ void FreiaUI::renderConnectionPanel()
             ImGui::SameLine(labelWidth);
             ImGui::SetNextItemWidth(inputWidth);
             ImGui::InputTextWithHint("##ENCPASS", "Shared chat secret", ChatPassword, IM_ARRAYSIZE(ChatPassword), ImGuiInputTextFlags_Password);
+            
+            ImGui::Text("Server Password: ");
+            ImGui::SameLine(labelWidth);
+            ImGui::SetNextItemWidth(inputWidth);
+            ImGui::InputTextWithHint("##SERVPASS", "Shared server secret", ServerPassword, IM_ARRAYSIZE(ServerPassword), ImGuiInputTextFlags_Password);
 
             ImGui::Text("Account Password: ");
             ImGui::SameLine(labelWidth);
@@ -216,7 +221,7 @@ void FreiaUI::renderConnectionPanel()
             if (ImGui::Button("Connect with Account")) {
                 if (validateLoginFields()) {
                     client = new ClientConnect();
-                    if (client->configureWithAccount(IP, Port, User, ChatPassword, AccountPassword)) {  // new method you'll add
+                    if (client->configureWithAccount(IP, Port, User, ChatPassword, ServerPassword, AccountPassword)) {  // new method you'll add
                         if (!client->connectToServer()) {
                             delete client;
                             client = nullptr;
@@ -260,6 +265,11 @@ void FreiaUI::renderConnectionPanel()
             ImGui::SetNextItemWidth(inputWidth);
             ImGui::InputTextWithHint("##ENCPASS", "Shared chat secret", ChatPassword, IM_ARRAYSIZE(ChatPassword), ImGuiInputTextFlags_Password);
 
+            ImGui::Text("Server Password: ");
+            ImGui::SameLine(labelWidth);
+            ImGui::SetNextItemWidth(inputWidth);
+            ImGui::InputTextWithHint("##SERVPASS", "Shared server secret", ServerPassword, IM_ARRAYSIZE(ServerPassword), ImGuiInputTextFlags_Password);
+
             ImGui::Text("Account Password: ");
             ImGui::SameLine(labelWidth);
             ImGui::SetNextItemWidth(inputWidth);
@@ -276,7 +286,7 @@ void FreiaUI::renderConnectionPanel()
             if (ImGui::Button("Create & Connect")) {
                 if (validateCreateFields()) {
                     client = new ClientConnect();
-                    if (client->configureForCreate(IP, Port, User, ChatPassword, AccountPassword)) {  // new method
+                    if (client->configureForCreate(IP, Port, User, ChatPassword, ServerPassword, AccountPassword)) {  // new method
                         if (!client->connectToServer()) {  // server will handle creation
                             delete client;
                             client = nullptr;
