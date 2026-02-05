@@ -31,7 +31,7 @@ int ClientConnect::createClientSocket(const std::string &serverIP, int serverPor
         return -1;
     }
 
-    // Set timeout (3 seconds example)
+    // Set timeout
     struct timeval tv;
     tv.tv_sec = 3;
     tv.tv_usec = 0;
@@ -433,16 +433,16 @@ bool ClientConnect::configureWithAccount(
     p.account_pw = accountPassword ? accountPassword : "";
 
     // Move into member variables
-    this->ip             = std::move(p.ip);
-    this->port           = p.port;
-    this->user           = std::move(p.user);
-    this->chatPassword   = std::move(p.chat_pw);
-    this->serverPassword = std::move(p.server_pw);
+    this->ip              = std::move(p.ip);
+    this->port            = p.port;
+    this->user            = std::move(p.user);
+    this->chatPassword    = std::move(p.chat_pw);
+    this->serverPassword  = std::move(p.server_pw);
     this->accountPassword = std::move(p.account_pw);
 
     // Derive keys from the cleaned values
-    sessionKey       = FreiaEncryption::deriveKey(this->chatPassword);
-    serverSessionKey = FreiaEncryption::deriveKey(this->serverPassword);
+    sessionKey        = FreiaEncryption::deriveKey(this->chatPassword);
+    serverSessionKey  = FreiaEncryption::deriveKey(this->serverPassword);
     accountSessionKey = FreiaEncryption::deriveKey(this->accountPassword);
 
     hasChatKey   = !this->chatPassword.empty();
@@ -450,8 +450,6 @@ bool ClientConnect::configureWithAccount(
     hasAccountKey = !this->accountPassword.empty();
 
     return hasChatKey && hasServerKey && hasAccountKey;
-
-    // return configure(ip, port, user, chatPassword, ""); // fallback to old configure for now
 }
 
 bool ClientConnect::configureForCreate(
@@ -483,8 +481,8 @@ bool ClientConnect::configure(
     if (!Validation::isValidPassword(serverPassword)) return false;
 
     // Assign sanitized / safe values
-    p.ip         = ip           ? ip           : "";
-    p.port       = port         ? std::atoi(port) : 0;
+    p.ip         = ip ? ip : "";
+    p.port       = port ? std::atoi(port) : 0;
     p.user       = Validation::sanitizeUsername(user ? user : "");
     p.chat_pw    = chatPassword ? chatPassword : "";
     p.server_pw  = serverPassword ? serverPassword : "";
