@@ -39,16 +39,8 @@ public:
         const char* user,
         const char* chatPassword,
         const char* serverPassword,
-        const char* accountPassword);
-
-    bool configureForCreate(
-        const char* ip,
-        const char* port,
-        const char* user,
-        const char* chatPassword,
-        const char* serverPassword,
-        const char* accountPassword);
-
+        const char* accountPassword,
+        bool isCreate);
     
     const std::unordered_set<std::string>& getOnlineUsers() const {
         return onlineUsers;
@@ -107,6 +99,7 @@ private:
     bool hasChatKey = false;
     bool hasServerKey = false;
     bool hasAccountKey = false;
+    bool isCreateMode = false;
 
     std::unordered_set<std::string> onlineUsers;
     bool showUserList = true;

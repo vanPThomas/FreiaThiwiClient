@@ -172,7 +172,7 @@ void FreiaUI::renderConnectionPanel()
             if (ImGui::Button("Connect with Account")) {
                 if (validateLoginFields()) {
                     client = new ClientConnect();
-                    if (client->configureWithAccount(IP, Port, User, ChatPassword, ServerPassword, AccountPassword)) {
+                    if (client->configureWithAccount(IP, Port, User, ChatPassword, ServerPassword, AccountPassword, false)) {
                         if (!client->connectToServer()) {
                             delete client;
                             client = nullptr;
@@ -237,7 +237,7 @@ void FreiaUI::renderConnectionPanel()
             if (ImGui::Button("Create & Connect")) {
                 if (validateCreateFields()) {
                     client = new ClientConnect();
-                    if (client->configureForCreate(IP, Port, User, ChatPassword, ServerPassword, AccountPassword)) {
+                    if (client->configureWithAccount(IP, Port, User, ChatPassword, ServerPassword, AccountPassword, true)) {
                         if (!client->connectToServer()) {  // server will handle creation
                             delete client;
                             client = nullptr;

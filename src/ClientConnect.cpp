@@ -144,6 +144,33 @@ bool ClientConnect::connectToServer()
     std::vector<std::string> lines = splitByNewline(replyPlain);
     addMessage(lines[1]);
 
+    if (hasAccountKey) {
+        std::string prot4Type = isCreateMode ? "CREATE" : "LOGIN";
+
+        std::string accountKeyB64 = FreiaEncryption::base64_encode(
+            std::string(reinterpret_cast<const char*>(accountSessionKey.data()), accountSessionKey.size()));
+
+        std::string prot4Frame = "PROT4\n" + prot4Type + "\n" + user + "\n" + accountKeyB64;
+
+        std::string prot4Cipher = FreiaEncryption::encryptData(prot4Frame, serverSessionKey);
+        if (prot4Cipher.empty()) {
+            addMessage("[Error] Failed to encrypt PROT4");
+            disconnect();
+            return false;
+        }
+
+        uint32_t p4Len = prot4Cipher.size();
+        uint32_t p4NetLen = htonl(p4Len);
+        if (send(clientSocket, &p4NetLen, sizeof(p4NetLen), 0) != sizeof(p4NetLen) ||
+            send(clientSocket, prot4Cipher.data(), prot4Cipher.size(), 0) != static_cast<ssize_t>(prot4Cipher.size())) {
+            addMessage("[Error] Failed to send PROT4");
+            disconnect();
+            return false;
+        }
+
+        addMessage("[Info] Sent PROT4 " + prot4Type + " request...");
+    }
+
     // Now safe to start background receive thread for normal messages
     std::thread(&ClientConnect::receiveMessages, this).detach();
 
@@ -388,6 +415,26 @@ void ClientConnect::handleProtocolPacket(const std::string& encryptedData)
             addMessage("[Server notice] " + payload + " (" + msgType + ")");
         }
     }
+    else if (proto == "PROT4") {
+        if (parts.size() < 2) {
+            addMessage("[Protocol error] Malformed PROT4");
+            return;
+        }
+
+        std::string status = parts[1];
+
+        if (status == "SUCCESS") {
+            addMessage("[Account login successful]");
+            // Proceed — maybe set a flag like isAccountAuthenticated = true;
+        } else if (status == "FAIL") {
+            std::string reason = (parts.size() > 2) ? parts[2] : "Unknown";
+            addMessage("[Account failed] " + reason);
+            isConnected = false;
+            // Optional: disconnect() or show popup
+        } else {
+            addMessage("[Unknown PROT4 status] " + status);
+        }
+    }
     else
     {
         addMessage("[Unknown protocol] " + proto);
@@ -412,7 +459,8 @@ bool ClientConnect::configureWithAccount(
     const char* user,
     const char* chatPassword,
     const char* serverPassword,
-    const char* accountPassword)
+    const char* accountPassword,
+    bool isCreate)
 {
     ConnectionParamsWithAccount p;
 
@@ -449,19 +497,9 @@ bool ClientConnect::configureWithAccount(
     hasServerKey = !this->serverPassword.empty();
     hasAccountKey = !this->accountPassword.empty();
 
-    return hasChatKey && hasServerKey && hasAccountKey;
-}
+    this->isCreateMode = isCreate;
 
-bool ClientConnect::configureForCreate(
-    const char* ip,
-    const char* port,
-    const char* user,
-    const char* chatPassword,
-    const char* serverPassword,
-    const char* accountPassword)
-{
-    // TODO: implement account creation
-    return configure(ip, port, user, chatPassword, ""); // fallback
+    return hasChatKey && hasServerKey && hasAccountKey;
 }
 
 bool ClientConnect::configure(
