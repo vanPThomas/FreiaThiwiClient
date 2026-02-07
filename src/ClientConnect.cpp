@@ -380,8 +380,6 @@ void ClientConnect::handleProtocolPacket(const std::string& encryptedData)
                 if (i > 2) payloadList += "\n";
                 payloadList += parts[i];
             }
-            std::cout << "TESTTEST!" << "\n";
-            std::cout << "Payload: " << payloadList << "\n";
             onlineUsers.clear();
             auto names = splitByNewline(payloadList);
             for (const auto& name : names) {
@@ -424,13 +422,13 @@ void ClientConnect::handleProtocolPacket(const std::string& encryptedData)
         std::string status = parts[1];
 
         if (status == "SUCCESS") {
-            addMessage("[Account login successful]");
-            // Proceed — maybe set a flag like isAccountAuthenticated = true;
+            addMessage("[Account success] " + (parts.size() > 2 ? parts[2] : "Authenticated"));
+            // You can set a flag like isAccountLoggedIn = true;
         } else if (status == "FAIL") {
             std::string reason = (parts.size() > 2) ? parts[2] : "Unknown";
             addMessage("[Account failed] " + reason);
-            isConnected = false;
-            // Optional: disconnect() or show popup
+            isConnected = false;  // force disconnect or show error
+            disconnect();         // optional: clean up
         } else {
             addMessage("[Unknown PROT4 status] " + status);
         }

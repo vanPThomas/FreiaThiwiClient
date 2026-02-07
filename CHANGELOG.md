@@ -1,6 +1,28 @@
 # Changelog
 All notable changes to **Freia Thiwi Client** will be documented here.
 
+## [0.5.0] - 2026-02-07
+
+### Added
+- Account-based authentication: login with existing account or create new one
+- Tabbed connection panel: "Login" (existing account) and "Create Account" (new account with password confirmation)
+- Account password field + confirmation on creation
+- Derived account key sent via new PROT4 protocol after PROT2 handshake
+- Handles PROT4 SUCCESS/FAIL replies from server with clear messages
+- Full round-trip support for account creation and login
+
+### Changed
+- `configureWithAccount()` now takes `bool isCreate` flag to distinguish login vs. creation
+- Connection flow: PROT2 (transport + username) → PROT4 (account auth) → normal chat
+- UI validation for account password fields
+
+### Fixed
+- Payload parsing for multi-line PROT3 messages (userList now reads all names correctly)
+
+This version brings real user accounts to Freia Thiwi, making it possible to have persistent, per-user identities while keeping the ultra-lightweight spirit intact.
+
+---
+
 ## [v0.4.5] - 2026-01-30
 ### Changed
 - Cleaned up code
