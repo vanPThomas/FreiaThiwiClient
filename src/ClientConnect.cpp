@@ -6,11 +6,14 @@
 #include <sstream>
 
 ClientConnect::ClientConnect(){}
-ClientConnect::ClientConnect(const char* ip,
-                             const char* port,
-                             const char* user,
-                             const char* chatPassword)
-    : ip(ip), port(std::atoi(port)), user(user), chatPassword(chatPassword) {}
+ClientConnect::ClientConnect(const std::string& ip,
+                             const std::string& portStr,
+                             const std::string& user,
+                             const std::string& chatPassword)
+    : ip(ip),
+      port(static_cast<uint16_t>(std::stoi(portStr))),
+      user(user),
+      chatPassword(chatPassword){}
 
 ClientConnect::~ClientConnect()
 {
@@ -452,90 +455,40 @@ std::vector<std::string> ClientConnect::splitByNewline(const std::string& s) {
 }
 
 bool ClientConnect::configureWithAccount(
-    const char* ip,
-    const char* port,
-    const char* user,
-    const char* chatPassword,
-    const char* serverPassword,
-    const char* accountPassword,
+    const std::string& ip,              // better: const &
+    const std::string& port,
+    const std::string& user,
+    const std::string& chatPassword,
+    const std::string& serverPassword,
+    const std::string& accountPassword,
     bool isCreate)
 {
-    ConnectionParamsWithAccount p;
-
     // Validation checks first (fail early)
-    if (!Validation::isValidIP(ip))          return false;
-    if (!Validation::isValidPort(port))      return false;
-    if (!Validation::isValidUser(user))      return false;
+    if (!Validation::isValidIP(ip))               return false;
+    if (!Validation::isValidPort(port))           return false;
+    if (!Validation::isValidUser(user))           return false;
     if (!Validation::isValidPassword(chatPassword))   return false;
     if (!Validation::isValidPassword(serverPassword)) return false;
     if (!Validation::isValidPassword(accountPassword)) return false;
 
-    // Assign sanitized / safe values
-    p.ip         = ip ? ip : "";
-    p.port       = port ? std::atoi(port) : 0;
-    p.user       = Validation::sanitizeUsername(user ? user : "");
-    p.chat_pw    = chatPassword ? chatPassword : "";
-    p.server_pw  = serverPassword ? serverPassword : "";
-    p.account_pw = accountPassword ? accountPassword : "";
-
     // Move into member variables
-    this->ip              = std::move(p.ip);
-    this->port            = p.port;
-    this->user            = std::move(p.user);
-    this->chatPassword    = std::move(p.chat_pw);
-    this->serverPassword  = std::move(p.server_pw);
-    this->accountPassword = std::move(p.account_pw);
+    this->ip             = ip;
+    this->port           = static_cast<uint16_t>(std::stoi(port));
+    this->user           = Validation::sanitizeUsername(user);
+    this->chatPassword   = chatPassword;
+    this->serverPassword = serverPassword;
+    this->accountPassword = accountPassword;
 
-    // Derive keys from the cleaned values
+    // Derive keys...
     sessionKey        = FreiaEncryption::deriveKey(this->chatPassword);
     serverSessionKey  = FreiaEncryption::deriveKey(this->serverPassword);
     accountSessionKey = FreiaEncryption::deriveKey(this->accountPassword);
 
-    hasChatKey   = !this->chatPassword.empty();
-    hasServerKey = !this->serverPassword.empty();
+    hasChatKey    = !this->chatPassword.empty();
+    hasServerKey  = !this->serverPassword.empty();
     hasAccountKey = !this->accountPassword.empty();
 
     this->isCreateMode = isCreate;
 
     return hasChatKey && hasServerKey && hasAccountKey;
-}
-
-bool ClientConnect::configure(
-    const char* ip,
-    const char* port,
-    const char* user,
-    const char* chatPassword,
-    const char* serverPassword)
-{
-    ConnectionParams p;
-
-    // Validation checks first (fail early)
-    if (!Validation::isValidIP(ip))          return false;
-    if (!Validation::isValidPort(port))      return false;
-    if (!Validation::isValidUser(user))      return false;
-    if (!Validation::isValidPassword(chatPassword))   return false;
-    if (!Validation::isValidPassword(serverPassword)) return false;
-
-    // Assign sanitized / safe values
-    p.ip         = ip ? ip : "";
-    p.port       = port ? std::atoi(port) : 0;
-    p.user       = Validation::sanitizeUsername(user ? user : "");
-    p.chat_pw    = chatPassword ? chatPassword : "";
-    p.server_pw  = serverPassword ? serverPassword : "";
-
-    // Move into member variables
-    this->ip             = std::move(p.ip);
-    this->port           = p.port;
-    this->user           = std::move(p.user);
-    this->chatPassword   = std::move(p.chat_pw);
-    this->serverPassword = std::move(p.server_pw);
-
-    // Derive keys from the cleaned values
-    sessionKey       = FreiaEncryption::deriveKey(this->chatPassword);
-    serverSessionKey = FreiaEncryption::deriveKey(this->serverPassword);
-
-    hasChatKey   = !this->chatPassword.empty();
-    hasServerKey = !this->serverPassword.empty();
-
-    return hasChatKey && hasServerKey;
 }

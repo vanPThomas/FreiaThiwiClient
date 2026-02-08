@@ -7,6 +7,7 @@
 #include <iostream>
 #include <cstring>
 #include <cctype>
+#include "imgui_stdlib.h"
 
 class FreiaUI
 {
@@ -21,7 +22,6 @@ public:
 private:
     void renderConnectionPanel();
     void renderChatPanel();
-    void connectButton();
     void disconnectButton();
     void clearInputFields();
     void renderMenuBar();
@@ -35,13 +35,15 @@ private:
     static const int bufferSize = 1024;
 
     char inputBuffer[bufferSize] = "";
-    char IP[20] = "";
-    char Port[10] = "";
-    char User[50] = "";
-    char ChatPassword[1000] = "";
-    char ServerPassword[1000] = "";
-    char AccountPassword[128] = "";
-    char ConfirmAccountPassword[128] = "";
+
+    std::string IP;
+    std::string Port;
+    std::string User;
+    std::string ChatPassword;
+    std::string ServerPassword;
+    std::string AccountPassword;
+    std::string ConfirmAccountPassword;
+
 
     bool focusInput = false;
     bool quitRequested = false;

@@ -31,6 +31,8 @@ add_executable(freia-thiwi-client
     imgui/backends/imgui_impl_glfw.cpp
     imgui/backends/imgui_impl_opengl3.cpp
 
+    imgui/misc/cpp/imgui_stdlib.cpp
+
 )
 
 # Include directories for our code + ImGui
@@ -38,6 +40,7 @@ target_include_directories(freia-thiwi-client PRIVATE
     include
     imgui
     imgui/backends
+    imgui/misc/cpp
 )
 
 # Find system libs

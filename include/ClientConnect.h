@@ -17,7 +17,7 @@ class ClientConnect
 {
 public:
     ClientConnect();
-    ClientConnect(const char* ip, const char* port, const char* user, const char* chatPassword);
+    ClientConnect(const std::string& ip, const std::string& portStr, const std::string& user, const std::string& chatPassword);
     ~ClientConnect();
 
     bool connectToServer();
@@ -26,20 +26,14 @@ public:
 
     const std::vector<std::string>& getMessages() const;
     bool isConnectedToServer() const { return isConnected; }
-    bool configure(
-            const char* ip,
-            const char* port,
-            const char* user,
-            const char* chatPassword,
-            const char* serverPassword);
 
     bool configureWithAccount(
-        const char* ip,
-        const char* port,
-        const char* user,
-        const char* chatPassword,
-        const char* serverPassword,
-        const char* accountPassword,
+        const std::string& ip,
+        const std::string& port,
+        const std::string& user,
+        const std::string& chatPassword,
+        const std::string& serverPassword,
+        const std::string& accountPassword,
         bool isCreate);
     
     const std::unordered_set<std::string>& getOnlineUsers() const {

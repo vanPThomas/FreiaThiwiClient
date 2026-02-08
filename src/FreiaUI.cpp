@@ -116,7 +116,7 @@ void FreiaUI::renderConnectionPanel()
 {
     ImGui::SetNextWindowPos(ImVec2(50, 50), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSizeConstraints(ImVec2(530, 230), ImVec2(FLT_MAX, FLT_MAX));
-    ImGui::SetNextWindowSize(ImVec2(530, 320), ImGuiCond_FirstUseEver);  // taller for tabs + extra field
+    ImGui::SetNextWindowSize(ImVec2(530, 320), ImGuiCond_FirstUseEver);
 
     ImGui::Begin("Connection Data");
 
@@ -139,32 +139,32 @@ void FreiaUI::renderConnectionPanel()
             ImGui::Text("IP: ");
             ImGui::SameLine(labelWidth);
             ImGui::SetNextItemWidth(inputWidth);
-            ImGui::InputTextWithHint("##IP", "e.g. 192.168.1.100", IP, IM_ARRAYSIZE(IP));
+            ImGui::InputTextWithHint("##IP", "e.g. 192.168.1.100", &IP);
 
             ImGui::Text("Port: ");
             ImGui::SameLine(labelWidth);
             ImGui::SetNextItemWidth(inputWidth);
-            ImGui::InputTextWithHint("##PORT", "e.g. 8080", Port, IM_ARRAYSIZE(Port));
+            ImGui::InputTextWithHint("##PORT", "e.g. 8080", &Port);
 
             ImGui::Text("User Name: ");
             ImGui::SameLine(labelWidth);
             ImGui::SetNextItemWidth(inputWidth);
-            ImGui::InputTextWithHint("##USERNAME", "Your display name", User, IM_ARRAYSIZE(User));
+            ImGui::InputTextWithHint("##USERNAME", "Your display name", &User);
 
             ImGui::Text("Encryption Password: ");
             ImGui::SameLine(labelWidth);
             ImGui::SetNextItemWidth(inputWidth);
-            ImGui::InputTextWithHint("##ENCPASS", "Shared chat secret", ChatPassword, IM_ARRAYSIZE(ChatPassword), ImGuiInputTextFlags_Password);
+            ImGui::InputTextWithHint("##ENCPASS", "Shared chat secret", &ChatPassword, ImGuiInputTextFlags_Password);
             
             ImGui::Text("Server Password: ");
             ImGui::SameLine(labelWidth);
             ImGui::SetNextItemWidth(inputWidth);
-            ImGui::InputTextWithHint("##SERVPASS", "Shared server secret", ServerPassword, IM_ARRAYSIZE(ServerPassword), ImGuiInputTextFlags_Password);
+            ImGui::InputTextWithHint("##SERVPASS", "Shared server secret", &ServerPassword, ImGuiInputTextFlags_Password);
 
             ImGui::Text("Account Password: ");
             ImGui::SameLine(labelWidth);
             ImGui::SetNextItemWidth(inputWidth);
-            ImGui::InputTextWithHint("##ACCOUNTPASS", "Your account login password", AccountPassword, IM_ARRAYSIZE(AccountPassword), ImGuiInputTextFlags_Password);
+            ImGui::InputTextWithHint("##ACCOUNTPASS", "Your account login password", &AccountPassword, ImGuiInputTextFlags_Password);
 
             ImGui::Separator();
             ImGui::Spacing();
@@ -199,37 +199,37 @@ void FreiaUI::renderConnectionPanel()
             ImGui::Text("IP: ");
             ImGui::SameLine(labelWidth);
             ImGui::SetNextItemWidth(inputWidth);
-            ImGui::InputTextWithHint("##IP", "e.g. 192.168.1.100", IP, IM_ARRAYSIZE(IP));
+            ImGui::InputTextWithHint("##IP", "e.g. 192.168.1.100", &IP);
 
             ImGui::Text("Port: ");
             ImGui::SameLine(labelWidth);
             ImGui::SetNextItemWidth(inputWidth);
-            ImGui::InputTextWithHint("##PORT", "e.g. 8080", Port, IM_ARRAYSIZE(Port));
+            ImGui::InputTextWithHint("##PORT", "e.g. 8080", &Port);
 
             ImGui::Text("User Name: ");
             ImGui::SameLine(labelWidth);
             ImGui::SetNextItemWidth(inputWidth);
-            ImGui::InputTextWithHint("##USERNAME", "Choose a username", User, IM_ARRAYSIZE(User));
+            ImGui::InputTextWithHint("##USERNAME", "Choose a username", &User);
 
             ImGui::Text("Encryption Password: ");
             ImGui::SameLine(labelWidth);
             ImGui::SetNextItemWidth(inputWidth);
-            ImGui::InputTextWithHint("##ENCPASS", "Shared chat secret", ChatPassword, IM_ARRAYSIZE(ChatPassword), ImGuiInputTextFlags_Password);
+            ImGui::InputTextWithHint("##ENCPASS", "Shared chat secret", &ChatPassword, ImGuiInputTextFlags_Password);
 
             ImGui::Text("Server Password: ");
             ImGui::SameLine(labelWidth);
             ImGui::SetNextItemWidth(inputWidth);
-            ImGui::InputTextWithHint("##SERVPASS", "Shared server secret", ServerPassword, IM_ARRAYSIZE(ServerPassword), ImGuiInputTextFlags_Password);
+            ImGui::InputTextWithHint("##SERVPASS", "Shared server secret", &ServerPassword, ImGuiInputTextFlags_Password);
 
             ImGui::Text("Account Password: ");
             ImGui::SameLine(labelWidth);
             ImGui::SetNextItemWidth(inputWidth);
-            ImGui::InputTextWithHint("##ACCOUNTPASS", "Choose account password", AccountPassword, IM_ARRAYSIZE(AccountPassword), ImGuiInputTextFlags_Password);
+            ImGui::InputTextWithHint("##ACCOUNTPASS", "Choose account password", &AccountPassword, ImGuiInputTextFlags_Password);
 
             ImGui::Text("Confirm Password: ");
             ImGui::SameLine(labelWidth);
             ImGui::SetNextItemWidth(inputWidth);
-            ImGui::InputTextWithHint("##CONFIRMPASS", "Repeat account password", ConfirmAccountPassword, IM_ARRAYSIZE(ConfirmAccountPassword), ImGuiInputTextFlags_Password);
+            ImGui::InputTextWithHint("##CONFIRMPASS", "Repeat account password", &ConfirmAccountPassword, ImGuiInputTextFlags_Password);
 
             ImGui::Separator();
             ImGui::Spacing();
@@ -238,7 +238,7 @@ void FreiaUI::renderConnectionPanel()
                 if (validateCreateFields()) {
                     client = new ClientConnect();
                     if (client->configureWithAccount(IP, Port, User, ChatPassword, ServerPassword, AccountPassword, true)) {
-                        if (!client->connectToServer()) {  // server will handle creation
+                        if (!client->connectToServer()) {
                             delete client;
                             client = nullptr;
                             openPopup("Connection/creation failed.");
@@ -306,65 +306,6 @@ void FreiaUI::renderChatPanel()
     ImGui::End();
 }
 
-void FreiaUI::connectButton()
-{
-    if (ImGui::Button("Connect"))
-    {
-        // Basic UI validation before touching networking
-        if (!Validation::isValidIP(IP))
-        {
-            openPopup("Invalid IP address.");
-            return;
-        }
-
-        if (!Validation::isValidPort(Port))
-        {
-            openPopup("Invalid PORT.");
-            return;
-        }
-
-        if(!Validation::isValidUser(User))
-        {
-            openPopup("Username is not valid.");
-            return;
-        }
-        if(!Validation::isValidPassword(ChatPassword))
-        {
-            openPopup("Chat password is invalid.");
-            return;
-        }
-        if(!Validation::isValidPassword(ServerPassword))
-        {
-            openPopup("Server password is invalid.");
-            return;
-        }
-
-        client = new ClientConnect();
-        
-        // Network-side validation
-        if (client->configure(IP, Port, User, ChatPassword, ServerPassword))
-        {
-            if (!client->connectToServer())
-            {
-                delete client;
-                client = nullptr;
-                openPopup("Connection failed. Server unreachable.");
-            }
-            else
-            {
-                
-            }
-        }
-        else
-        {
-            delete client;
-            client = nullptr;
-            openPopup("Configuration rejected.");
-        }
-    }
-}
-
-
 void FreiaUI::disconnectButton()
 {
     if (ImGui::Button("Disconnect"))
@@ -381,12 +322,14 @@ void FreiaUI::disconnectButton()
 
 void FreiaUI::clearInputFields()
 {
-    std::memset(IP, 0, sizeof(IP));
-    std::memset(Port, 0, sizeof(Port));
-    std::memset(User, 0, sizeof(User));
-    std::memset(ChatPassword, 0, sizeof(ChatPassword));
+    IP.clear();
+    Port.clear();
+    User.clear();
+    ChatPassword.clear();
+    ServerPassword.clear();
+    AccountPassword.clear();
+    ConfirmAccountPassword.clear();
     std::memset(inputBuffer, 0, sizeof(inputBuffer));
-    std::memset(ServerPassword, 0, sizeof(ServerPassword));
 }
 
 void FreiaUI::renderMenuBar()
@@ -499,7 +442,8 @@ void FreiaUI::renderUserList()
     }
 }
 
-bool FreiaUI::validateLoginFields() {
+bool FreiaUI::validateLoginFields()
+{
     if (!Validation::isValidIP(IP))            { openPopup("Invalid IP."); return false; }
     if (!Validation::isValidPort(Port))        { openPopup("Invalid Port."); return false; }
     if (!Validation::isValidUser(User))        { openPopup("Invalid username."); return false; }
@@ -508,11 +452,14 @@ bool FreiaUI::validateLoginFields() {
     return true;
 }
 
-bool FreiaUI::validateCreateFields() {
+bool FreiaUI::validateCreateFields()
+{
     if (!validateLoginFields()) return false;
-    if (strcmp(AccountPassword, ConfirmAccountPassword) != 0) {
+
+    if (AccountPassword != ConfirmAccountPassword) {
         openPopup("Account passwords do not match.");
         return false;
     }
+
     return true;
 }

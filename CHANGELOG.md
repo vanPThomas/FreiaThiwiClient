@@ -1,8 +1,13 @@
 # Changelog
 All notable changes to **Freia Thiwi Client** will be documented here.
 
-## [0.5.0] - 2026-02-07
+## [0.5.1] - 2026-02-08
+### Changed
+-Upgraded from c-style arrays to proper c++ strings for better legible code
 
+---
+
+## [0.5.0] - 2026-02-07
 ### Added
 - Account-based authentication: login with existing account or create new one
 - Tabbed connection panel: "Login" (existing account) and "Create Account" (new account with password confirmation)
