@@ -32,6 +32,11 @@ private:
     bool validateLoginFields();
     bool validateCreateFields();
 
+    void labeledPasswordInput(const char* label, std::string& value, const char* hint);
+    void labeledTextInput(const char* label, std::string& value, const char* hint);
+    bool tryConnectAndConfigure(bool isCreation);
+
+
     static const int bufferSize = 1024;
 
     char inputBuffer[bufferSize] = "";
@@ -66,4 +71,8 @@ private:
 
     std::unordered_set<std::string> onlineUsers;
     bool showUserList = true;
+
+    const float labelWidth = 220.0f;
+    const float inputWidth = 300.0f;
+
 };
