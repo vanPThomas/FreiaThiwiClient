@@ -69,7 +69,6 @@ int ClientConnect::createClientSocket(const std::string &serverIP, int serverPor
     return sock;
 }
 
-
 bool ClientConnect::connectToServer()
 {
     if (!hasServerKey) {
@@ -235,7 +234,6 @@ void ClientConnect::receiveMessages()
 
     disconnect();
 }
-
 
 void ClientConnect::addMessage(const std::string &message)
 {
@@ -408,11 +406,9 @@ void ClientConnect::handleProtocolPacket(const std::string& encryptedData)
             }
         }
         else if (msgType == "userDisconnected") {
-            // your existing disconnect message
             addMessage("[Server] " + payload);
         }
         else {
-            // fallback for any other server notice
             addMessage("[Server notice] " + payload + " (" + msgType + ")");
         }
     }
@@ -426,12 +422,11 @@ void ClientConnect::handleProtocolPacket(const std::string& encryptedData)
 
         if (status == "SUCCESS") {
             addMessage("[Account success] " + (parts.size() > 2 ? parts[2] : "Authenticated"));
-            // You can set a flag like isAccountLoggedIn = true;
         } else if (status == "FAIL") {
             std::string reason = (parts.size() > 2) ? parts[2] : "Unknown";
             addMessage("[Account failed] " + reason);
-            isConnected = false;  // force disconnect or show error
-            disconnect();         // optional: clean up
+            isConnected = false;
+            disconnect();
         } else {
             addMessage("[Unknown PROT4 status] " + status);
         }
@@ -442,7 +437,8 @@ void ClientConnect::handleProtocolPacket(const std::string& encryptedData)
     }
 }
 
-std::vector<std::string> ClientConnect::splitByNewline(const std::string& s) {
+std::vector<std::string> ClientConnect::splitByNewline(const std::string& s)
+{
     std::vector<std::string> lines;
     std::string line;
     std::istringstream iss(s);
@@ -455,7 +451,7 @@ std::vector<std::string> ClientConnect::splitByNewline(const std::string& s) {
 }
 
 bool ClientConnect::configureWithAccount(
-    const std::string& ip,              // better: const &
+    const std::string& ip,
     const std::string& port,
     const std::string& user,
     const std::string& chatPassword,
@@ -473,7 +469,8 @@ bool ClientConnect::configureWithAccount(
 
     // Move into member variables
     this->ip             = ip;
-    this->port           = static_cast<uint16_t>(std::stoi(port));
+    this->port = safeParsePort(port);
+    if (this->port == 0) return false;
     this->user           = Validation::sanitizeUsername(user);
     this->chatPassword   = chatPassword;
     this->serverPassword = serverPassword;
@@ -491,4 +488,19 @@ bool ClientConnect::configureWithAccount(
     this->isCreateMode = isCreate;
 
     return hasChatKey && hasServerKey && hasAccountKey;
+}
+
+uint16_t ClientConnect::safeParsePort(const std::string& s)
+{
+    if (s.empty()) return 0;
+    try {
+        size_t pos = 0;
+        unsigned long val = std::stoul(s, &pos);
+        if (pos != s.size() || val == 0 || val > 65535) {
+            return 0;
+        }
+        return static_cast<uint16_t>(val);
+    } catch (...) {
+        return 0;
+    }
 }

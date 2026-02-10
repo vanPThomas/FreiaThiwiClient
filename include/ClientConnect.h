@@ -46,23 +46,6 @@ public:
     
 private:
 
-    struct ConnectionParams {
-        std::string ip;
-        uint16_t port = 0;
-        std::string user;
-        std::string chat_pw;
-        std::string server_pw;
-    };
-
-    struct ConnectionParamsWithAccount {
-        std::string ip;
-        uint16_t port = 0;
-        std::string user;
-        std::string chat_pw;
-        std::string server_pw;
-        std::string account_pw;
-    };
-
     void handleSystemCallError(const std::string& errorMsg);
     int createClientSocket(const std::string &serverIP, int serverPort);
     void receiveMessages();
@@ -71,6 +54,7 @@ private:
     std::vector<std::string> splitByNewline(const std::string& s);
     std::string buildProt1Frame(const std::string& ciphertext) const;
     std::string buildProt2Frame() const;
+    uint16_t safeParsePort(const std::string& s);
 
     int clientSocket = -1;
     bool isConnected = false;

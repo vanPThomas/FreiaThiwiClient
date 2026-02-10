@@ -1,6 +1,18 @@
 # Changelog
 All notable changes to **Freia Thiwi Client** will be documented here.
 
+## [0.5.3] - 2026-02-10
+### Changed
+- Refactored ClientConnect.cpp
+
+---
+
+## [0.5.2] - 2026-02-09
+### Changed
+- Refactored FreiaUI.cpp
+
+---
+
 ## [0.5.1] - 2026-02-08
 ### Changed
 -Upgraded from c-style arrays to proper c++ strings for better legible code
