@@ -406,7 +406,6 @@ void FreiaUI::labeledTextInput(const char* label, std::string& value, const char
 
 bool FreiaUI::tryConnectAndConfigure(bool isCreation) {
     client = new ClientConnect();
-    std::cout << "TESTTEST!" << "\n";
     if (!client) return false;
 
     bool success = client->configureWithAccount(
@@ -414,8 +413,6 @@ bool FreiaUI::tryConnectAndConfigure(bool isCreation) {
         ChatPassword, ServerPassword, AccountPassword,
         isCreation
     );
-
-    std::cout << success << "\n";
 
     if (!success) {
         openPopup("Configuration rejected.");
