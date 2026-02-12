@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to **Freia Thiwi Client** will be documented here.
 
+## [0.5.4] - 2026-02-12
+### Changed
+- Added sendWithLengthPrefix function for cleaner code.
+
+----
+
 ## [0.5.3] - 2026-02-10
 ### Changed
 - Refactored ClientConnect.cpp

@@ -90,10 +90,8 @@ bool ClientConnect::connectToServer()
         return false;
 
     // 3. Send handshake with length prefix
-    uint32_t len = transportCipher.size();
-    uint32_t netLen = htonl(len);
-    if (send(clientSocket, &netLen, sizeof(netLen), 0) != sizeof(netLen) ||
-        send(clientSocket, transportCipher.data(), transportCipher.size(), 0) != static_cast<ssize_t>(transportCipher.size())) {
+    if (!sendWithLengthPrefix(clientSocket, transportCipher))
+    {
         addMessage("[Error] Failed to send handshake to server");
         disconnect();
         return false;
@@ -161,10 +159,8 @@ bool ClientConnect::connectToServer()
             return false;
         }
 
-        uint32_t p4Len = prot4Cipher.size();
-        uint32_t p4NetLen = htonl(p4Len);
-        if (send(clientSocket, &p4NetLen, sizeof(p4NetLen), 0) != sizeof(p4NetLen) ||
-            send(clientSocket, prot4Cipher.data(), prot4Cipher.size(), 0) != static_cast<ssize_t>(prot4Cipher.size())) {
+        if (!sendWithLengthPrefix(clientSocket, prot4Cipher))
+        {
             addMessage("[Error] Failed to send PROT4");
             disconnect();
             return false;
@@ -269,11 +265,8 @@ void ClientConnect::sendMessage(const std::string& text)
     }
 
     // 3. Send with length prefix
-    uint32_t len = transportCipher.size();
-    uint32_t netLen = htonl(len);
-
-    if (send(clientSocket, &netLen, sizeof(netLen), 0) != sizeof(netLen) ||
-        send(clientSocket, transportCipher.data(), transportCipher.size(), 0) != static_cast<ssize_t>(transportCipher.size())) {
+    if (!sendWithLengthPrefix(clientSocket, transportCipher))
+    {
         addMessage("[Error] Failed to send to server");
         isConnected = false;
         return;
@@ -503,4 +496,13 @@ uint16_t ClientConnect::safeParsePort(const std::string& s)
     } catch (...) {
         return 0;
     }
+}
+
+bool ClientConnect::sendWithLengthPrefix(int sock, const std::string& data)
+{
+    if (sock <= 0) return false;
+    uint32_t lenNet = htonl(static_cast<uint32_t>(data.size()));
+    if (send(sock, &lenNet, sizeof(lenNet), 0) != sizeof(lenNet)) return false;
+    if (send(sock, data.data(), data.size(), 0) != static_cast<ssize_t>(data.size())) return false;
+    return true;
 }

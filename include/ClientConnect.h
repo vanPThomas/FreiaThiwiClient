@@ -55,6 +55,7 @@ private:
     std::string buildProt1Frame(const std::string& ciphertext) const;
     std::string buildProt2Frame() const;
     uint16_t safeParsePort(const std::string& s);
+    bool sendWithLengthPrefix(int sock, const std::string& data);
 
     int clientSocket = -1;
     bool isConnected = false;
