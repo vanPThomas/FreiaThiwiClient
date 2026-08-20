@@ -368,6 +368,7 @@ void FreiaUI::renderUserList()
     }
 }
 
+//Check if login fields are correctlt formatted
 bool FreiaUI::validateLoginFields()
 {
     if (!Validation::isValidIP(IP))            { openPopup("Invalid IP."); return false; }
@@ -378,6 +379,7 @@ bool FreiaUI::validateLoginFields()
     return true;
 }
 
+// Check login fields and if given passwords match
 bool FreiaUI::validateCreateFields()
 {
     if (!validateLoginFields()) return false;
@@ -390,38 +392,45 @@ bool FreiaUI::validateCreateFields()
     return true;
 }
 
-void FreiaUI::labeledPasswordInput(const char* label, std::string& value, const char* hint) {
+// Create password label
+void FreiaUI::labeledPasswordInput(const char* label, std::string& value, const char* hint)
+{
     ImGui::Text("%s", label);
     ImGui::SameLine(labelWidth);
     ImGui::SetNextItemWidth(inputWidth);
     ImGui::InputTextWithHint(("##" + std::string(label)).c_str(), hint, &value, ImGuiInputTextFlags_Password);
 }
 
-void FreiaUI::labeledTextInput(const char* label, std::string& value, const char* hint) {
+// Create text input labels
+void FreiaUI::labeledTextInput(const char* label, std::string& value, const char* hint)
+{
     ImGui::Text("%s", label);
     ImGui::SameLine(labelWidth);
     ImGui::SetNextItemWidth(inputWidth);
     ImGui::InputTextWithHint(("##" + std::string(label)).c_str(), hint, &value);
 }
 
-bool FreiaUI::tryConnectAndConfigure(bool isCreation) {
+
+// Configure client
+bool FreiaUI::tryConnectAndConfigure(bool isCreation)
+{
     client = new ClientConnect();
     if (!client) return false;
 
     bool success = client->configureWithAccount(
-        IP, Port, User,
-        ChatPassword, ServerPassword, AccountPassword,
-        isCreation
+        IP, Port, User, ChatPassword, ServerPassword, AccountPassword, isCreation
     );
 
-    if (!success) {
+    if (!success)
+    {
         openPopup("Configuration rejected.");
         delete client;
         client = nullptr;
         return false;
     }
 
-    if (!client->connectToServer()) {
+    if (!client->connectToServer())
+    {
         openPopup(isCreation ? "Connection/creation failed." : "Connection failed. Server unreachable.");
         delete client;
         client = nullptr;
