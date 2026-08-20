@@ -417,7 +417,8 @@ bool FreiaUI::tryConnectAndConfigure(bool isCreation)
     client = new ClientConnect();
     if (!client) return false;
 
-    bool success = client->configureWithAccount(
+    bool success = client->configureWithAccount
+    (
         IP, Port, User, ChatPassword, ServerPassword, AccountPassword, isCreation
     );
 
