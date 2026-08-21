@@ -3,6 +3,7 @@
 
 int FreiaUI::theme = 2;
 
+// UI color themes
 const ImVec4 FreiaUI::themes[] = {
     ImVec4(1.0f, 0.0f, 0.5f, 1.0f),    // pink
     ImVec4(1.00f, 0.43f, 0.71f, 1.00f),  // Soft Pink / Magenta
@@ -26,6 +27,7 @@ const ImVec4 FreiaUI::themes[] = {
     "Deep Red",
 };
 
+// Ui constructor
 FreiaUI::FreiaUI()
 {
     if (!glfwInit())
@@ -61,6 +63,7 @@ FreiaUI::FreiaUI()
     ImGui::GetIO().FontGlobalScale = 1.0f;  // 100% scaling
 }
 
+// UI deconstructor
 FreiaUI::~FreiaUI()
 {
     ImGui_ImplOpenGL3_Shutdown();
@@ -112,6 +115,7 @@ bool FreiaUI::render()
     return true;
 }
 
+// Render panel to connect to server
 void FreiaUI::renderConnectionPanel()
 {
     ImGui::SetNextWindowPos(ImVec2(50, 50), ImGuiCond_FirstUseEver);
@@ -186,6 +190,7 @@ void FreiaUI::renderConnectionPanel()
     ImGui::End();
 }
 
+// Render the main chat panel
 void FreiaUI::renderChatPanel()
 {
     ImGui::SetNextWindowPos(ImVec2(50, 350), ImGuiCond_FirstUseEver);
@@ -232,6 +237,7 @@ void FreiaUI::renderChatPanel()
     ImGui::End();
 }
 
+// Button to disconnect from server
 void FreiaUI::disconnectButton()
 {
     if (ImGui::Button("Disconnect"))
@@ -246,6 +252,7 @@ void FreiaUI::disconnectButton()
     }
 }
 
+// Clear all the input fields
 void FreiaUI::clearInputFields()
 {
     IP.clear();
@@ -258,6 +265,7 @@ void FreiaUI::clearInputFields()
     std::memset(inputBuffer, 0, sizeof(inputBuffer));
 }
 
+// Render upper menu bar
 void FreiaUI::renderMenuBar()
 {
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
@@ -279,12 +287,14 @@ void FreiaUI::renderMenuBar()
     ImGui::PopStyleColor();
 }
 
+// Call up popup with message
 void FreiaUI::openPopup(const std::string& message)
 {
     popupMessage = message;
     popupOpen = true;
 }
 
+// Show popup window if so required
 void FreiaUI::showPopup()
 {
     if (popupOpen)
@@ -347,6 +357,7 @@ void FreiaUI::renderOptions()
     ImGui::End();
 }
 
+// Render the list of connected users
 void FreiaUI::renderUserList()
 {
     if (client && client->getIsConnected())
