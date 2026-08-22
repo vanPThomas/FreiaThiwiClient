@@ -69,6 +69,7 @@ int ClientConnect::createClientSocket(const std::string &serverIP, int serverPor
     return sock;
 }
 
+// Connect to server
 bool ClientConnect::connectToServer()
 {
     if (!hasServerKey) {
@@ -175,6 +176,7 @@ bool ClientConnect::connectToServer()
     return true;
 }
 
+//Disconnect from server
 void ClientConnect::disconnect()
 {
     if (isConnected)
@@ -185,6 +187,7 @@ void ClientConnect::disconnect()
     }
 }
 
+// Receive messages from server
 void ClientConnect::receiveMessages()
 {
     while (isConnected)
@@ -231,12 +234,14 @@ void ClientConnect::receiveMessages()
     disconnect();
 }
 
+// Add message to chat history 
 void ClientConnect::addMessage(const std::string &message)
 {
     std::lock_guard<std::mutex> lock(chatMutex);
     chatMessages.push_back(message);
 }
 
+// Send message to server
 void ClientConnect::sendMessage(const std::string& text)
 {
     if (!isConnected || text.empty()) {
@@ -277,6 +282,7 @@ void ClientConnect::sendMessage(const std::string& text)
     return;
 }
 
+// Build Protocol 1 framework
 std::string ClientConnect::buildProt1Frame(const std::string& ciphertext) const
 {
     std::string frame = "PROT1\n";
@@ -288,6 +294,7 @@ std::string ClientConnect::buildProt1Frame(const std::string& ciphertext) const
     return frame;
 }
 
+// Build protocol 2 framework
 std::string ClientConnect::buildProt2Frame() const
 {
     std::string frame = "PROT2\n";
@@ -295,6 +302,7 @@ std::string ClientConnect::buildProt2Frame() const
     return frame;
 }
 
+// Return the chat history
 const std::vector<std::string>& ClientConnect::getMessages() const
 {
     std::lock_guard<std::mutex> lock(chatMutex);
