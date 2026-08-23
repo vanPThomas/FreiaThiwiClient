@@ -5,6 +5,7 @@
 #include <netinet/in.h>
 #include <sstream>
 
+// Constructor
 ClientConnect::ClientConnect(){}
 ClientConnect::ClientConnect(const std::string& ip,
                              const std::string& portStr,
@@ -15,16 +16,19 @@ ClientConnect::ClientConnect(const std::string& ip,
       user(user),
       chatPassword(chatPassword){}
 
+// Client destructor
 ClientConnect::~ClientConnect()
 {
     disconnect();
 }
 
+// Error handler
 void ClientConnect::handleSystemCallError(const std::string &errorMsg)
 {
     std::cerr << errorMsg << ", errno: " << errno << "\n";
 }
 
+// Create a client socket to connect to a server
 int ClientConnect::createClientSocket(const std::string &serverIP, int serverPort)
 {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
