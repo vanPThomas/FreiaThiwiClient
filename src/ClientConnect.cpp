@@ -313,6 +313,7 @@ const std::vector<std::string>& ClientConnect::getMessages() const
     return chatMessages;
 }
 
+// Process the protocols of incoming packages 
 void ClientConnect::handleProtocolPacket(const std::string& encryptedData)
 {
     std::string plaintext =
@@ -442,6 +443,7 @@ void ClientConnect::handleProtocolPacket(const std::string& encryptedData)
     }
 }
 
+// Split package by new line
 std::vector<std::string> ClientConnect::splitByNewline(const std::string& s)
 {
     std::vector<std::string> lines;
@@ -455,6 +457,7 @@ std::vector<std::string> ClientConnect::splitByNewline(const std::string& s)
     return lines;
 }
 
+// Configure client with account information
 bool ClientConnect::configureWithAccount(
     const std::string& ip,
     const std::string& port,
@@ -510,6 +513,7 @@ uint16_t ClientConnect::safeParsePort(const std::string& s)
     }
 }
 
+// Send the package with the length of the package added as a prefix
 bool ClientConnect::sendWithLengthPrefix(int sock, const std::string& data)
 {
     if (sock <= 0) return false;

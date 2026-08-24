@@ -73,6 +73,7 @@ FreiaUI::~FreiaUI()
     glfwTerminate();
 }
 
+// General render function
 bool FreiaUI::render()
 {
     if (!window || glfwWindowShouldClose(window))
@@ -315,6 +316,7 @@ void FreiaUI::showPopup()
     }
 }
 
+// Render the panel for options
 void FreiaUI::renderOptions()
 {
     if (!openOptions) return;
