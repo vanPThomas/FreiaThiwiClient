@@ -8,6 +8,7 @@
 #include <algorithm>
 
 
+// Validate IP address
 bool Validation::isValidIP(const std::string& ip)
 {
     int dots = 0;
@@ -26,6 +27,7 @@ bool Validation::isValidIP(const std::string& ip)
     return true;
 }
 
+// Validate port number 
 bool Validation::isValidPort(const std::string& portStr)
 {
     if (portStr.empty())
@@ -51,6 +53,7 @@ bool Validation::isValidPort(const std::string& portStr)
     return true;
 }
 
+// Validate user name
 bool Validation::isValidUser(const std::string& user)
 {
     if (user.front() == ' ' || user.back() == ' ') {
@@ -60,11 +63,13 @@ bool Validation::isValidUser(const std::string& user)
 
 }
 
+// Validate password
 bool Validation::isValidPassword(const std::string& password)
 {
     return !password.empty() && password.size() <= 128;
 }
 
+// Sanitize user name
 std::string Validation::sanitizeUsername(const std::string& input)
 {
     std::string clean;

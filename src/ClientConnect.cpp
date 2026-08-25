@@ -498,6 +498,7 @@ bool ClientConnect::configureWithAccount(
     return hasChatKey && hasServerKey && hasAccountKey;
 }
 
+// Parse the port number
 uint16_t ClientConnect::safeParsePort(const std::string& s)
 {
     if (s.empty()) return 0;
