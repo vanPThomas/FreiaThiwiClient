@@ -44,6 +44,7 @@ std::string FreiaEncryption::base64_decode(const std::string& in)
     return std::string(out.begin(), out.end());
 }
 
+// Encrypt string with given key
 std::string FreiaEncryption::encryptData(const std::string& data, const Key& key) {
     // unsigned char key[32];
     // PKCS5_PBKDF2_HMAC(password.c_str(), password.size(), nullptr, 0, 100000, EVP_sha256(), 32, key);
@@ -82,6 +83,7 @@ std::string FreiaEncryption::encryptData(const std::string& data, const Key& key
     return result;
 }
 
+// Decrypt string with given key
 std::string FreiaEncryption::decryptData(const std::string& data, const Key& key) {
     if (data.size() < 16) return "";
     std::string iv_str = data.substr(0, 16);
@@ -116,6 +118,7 @@ std::string FreiaEncryption::decryptData(const std::string& data, const Key& key
     return std::string(plaintext.begin(), plaintext.end());
 }
 
+// Derive key from given string 
 FreiaEncryption::Key FreiaEncryption::deriveKey(const std::string& password)
 {
     Key key{};
