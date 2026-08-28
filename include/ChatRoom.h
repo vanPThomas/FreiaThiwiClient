@@ -9,4 +9,7 @@ public:
     ~ChatRoom();
 private:
     std::string ChatRoomName;
+    std::string Password;
+    std::vector<std::string> chatMessages;
+
 }
