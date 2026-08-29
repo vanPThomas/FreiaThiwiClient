@@ -11,6 +11,7 @@
 #include <unordered_set>
 #include <chrono>
 #include <thread>
+#include "ChatRoom.h"
 
 
 class ClientConnect
@@ -62,6 +63,7 @@ private:
 
     mutable std::mutex chatMutex;
     std::vector<std::string> chatMessages;
+    std::vector<std::ChatRoom> ChatRooms; 
 
     std::string ip;
     int port;
