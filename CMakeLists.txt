@@ -20,6 +20,7 @@ add_executable(freia-thiwi-client
     src/FreiaUI.cpp
     src/Validation.cpp
     src/FreiaEncryption.cpp
+    src/ChatRoom.cpp
 
     # ImGui core
     imgui/imgui.cpp
