@@ -5,11 +5,11 @@
 class ChatRoom
 {
 public:
-    ChatRoom();
+    ChatRoom(std::string chatRoomName, std::vector<std::string> chatMessages);
     ~ChatRoom();
 private:
     std::string ChatRoomName;
     std::string Password;
-    std::vector<std::string> chatMessages;
+    std::vector<std::string> ChatMessages;
 
 }
