@@ -381,7 +381,7 @@ void FreiaUI::renderUserList()
     }
 }
 
-//Check if login fields are correctlt formatted
+// Check if login fields are correctly formatted
 bool FreiaUI::validateLoginFields()
 {
     if (!Validation::isValidIP(IP))            { openPopup("Invalid IP."); return false; }
@@ -452,4 +452,25 @@ bool FreiaUI::tryConnectAndConfigure(bool isCreation)
     }
 
     return true;
+}
+
+void FreiaUI::ChatRoomListRender()
+{
+    if (client && client->getIsConnected())
+    {
+        // const auto& users = client->getOnlineUsers();
+
+        // ImGui::BeginChild("Online Users", ImVec2(180, 0), true);
+        // ImGui::Text("Online (%zu)", users.size());
+        // ImGui::Separator();
+
+        // for (const auto& name : users)
+        // {
+        //     ImGui::TextColored(ImVec4(0.6f, 0.9f, 0.6f, 1.0f), "%s", name.c_str());
+        // }
+        // ImGui::EndChild();
+    } else
+    {
+        ImGui::TextDisabled("Not connected");
+    }
 }
