@@ -41,6 +41,10 @@ public:
         return onlineUsers;
     }
 
+    const std::vector<std::ChatRoom>& getChatRooms() const {
+        return chatRooms;
+    }
+
     bool getIsConnected() const {
         return isConnected;
     }
@@ -63,7 +67,7 @@ private:
 
     mutable std::mutex chatMutex;
     std::vector<std::string> chatMessages;
-    std::vector<std::ChatRoom> ChatRooms; 
+    std::vector<std::ChatRoom> chatRooms; 
 
     std::string ip;
     int port;
