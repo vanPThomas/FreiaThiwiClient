@@ -7,9 +7,15 @@ class ChatRoom
 public:
     ChatRoom(std::string chatRoomName, std::vector<std::string> chatMessages);
     ~ChatRoom();
+
+    const std::std::string getChatRoomNames() const {
+        return chatRoomName;
+    }
+
+
 private:
-    std::string ChatRoomName;
-    std::string Password;
-    std::vector<std::string> ChatMessages;
+    std::string chatRoomName;
+    std::string password;
+    std::vector<std::string> chatMessages;
 
 }

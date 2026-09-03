@@ -464,10 +464,11 @@ void FreiaUI::ChatRoomListRender()
         ImGui::Text("Rooms (%zu)", rooms.size());
         ImGui::Separator();
 
-        // for (const auto& name : users)
-        // {
-        //     ImGui::TextColored(ImVec4(0.6f, 0.9f, 0.6f, 1.0f), "%s", name.c_str());
-        // }
+        for (const auto& room : rooms)
+        {
+            std::string roomname = room->getChatRoomNames();
+            ImGui::TextColored(ImVec4(0.6f, 0.9f, 0.6f, 1.0f), "%s", roomname);
+        }
         ImGui::EndChild();
     }
     else
