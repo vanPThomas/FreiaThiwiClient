@@ -94,7 +94,8 @@ bool FreiaUI::render()
     renderMenuBar();
     renderConnectionPanel();
     renderChatPanel();
-    renderUserList();    
+    renderUserList();
+    chatRoomListRender();
 
     if (openOptions)
     {
@@ -454,7 +455,7 @@ bool FreiaUI::tryConnectAndConfigure(bool isCreation)
     return true;
 }
 
-void FreiaUI::ChatRoomListRender()
+void FreiaUI::chatRoomListRender()
 {
     if (client && client->getIsConnected())
     {

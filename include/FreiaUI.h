@@ -25,6 +25,8 @@ private:
     void disconnectButton();
     void clearInputFields();
     void renderMenuBar();
+    void chatRoomListRender();
+    
     void showPopup();
     void openPopup(const std::string& message);
     void renderOptions();
