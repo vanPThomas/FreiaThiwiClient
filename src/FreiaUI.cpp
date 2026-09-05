@@ -476,4 +476,18 @@ void FreiaUI::chatRoomListRender()
     {
         ImGui::TextDisabled("Not connected");
     }
+
+    if(ImGui::Button("CreateRoom"))
+    {
+        createRoom();
+    }
+    if(ImGui::Button("Connect Room"))
+    {
+        
+    }
+}
+
+void FreiaUI::createRoomRender()
+{
+
 }

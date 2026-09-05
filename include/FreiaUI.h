@@ -26,6 +26,8 @@ private:
     void clearInputFields();
     void renderMenuBar();
     void chatRoomListRender();
+    void createRoomRender();
+
     
     void showPopup();
     void openPopup(const std::string& message);
