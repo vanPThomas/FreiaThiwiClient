@@ -479,15 +479,30 @@ void FreiaUI::chatRoomListRender()
 
     if(ImGui::Button("CreateRoom"))
     {
-        createRoom();
+        createRoomRender();
     }
     if(ImGui::Button("Connect Room"))
     {
-        
+
     }
 }
 
 void FreiaUI::createRoomRender()
 {
+    ImGui::BeginChild("ChatRooms", ImVec2(180, 0), true);
+    ImGui::Text("Rooms (%zu)", rooms.size());
+    ImGui::Separator();
+    labeledTextInput("Chatroom Name:", ChatRoomName, "e.g. Friends Chatroom");
+    labeledPasswordInput("Password:", ChatRoomPassword, "Shared chat secret");
+
+    ImGui::Separator();
+    ImGui::Spacing();
+
+    if (ImGui::Button("Create Room")) {
+        if (validateLoginFields()) {
+            tryConnectAndConfigure(false);
+        }
+    }
+    ImGui::EndChild();
 
 }
