@@ -455,6 +455,7 @@ bool FreiaUI::tryConnectAndConfigure(bool isCreation)
     return true;
 }
 
+// available room window
 void FreiaUI::chatRoomListRender()
 {
     if (client && client->getIsConnected())
@@ -487,6 +488,7 @@ void FreiaUI::chatRoomListRender()
     }
 }
 
+// Create room window
 void FreiaUI::createRoomRender()
 {
     ImGui::BeginChild("ChatRooms", ImVec2(180, 0), true);
