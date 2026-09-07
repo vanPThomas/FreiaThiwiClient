@@ -139,12 +139,12 @@ void FreiaUI::renderConnectionPanel()
         if (ImGui::BeginTabItem("Login")) {
             ImGui::Text("Use an existing account");
 
-            labeledTextInput("IP:",               IP,                "e.g. 192.168.1.100");
-            labeledTextInput("Port:",             Port,              "e.g. 8080");
-            labeledTextInput("User Name:",        User,              "Your display name");
+            labeledTextInput("IP:", IP, "e.g. 192.168.1.100");
+            labeledTextInput("Port:", Port, "e.g. 8080");
+            labeledTextInput("User Name:", User, "Your display name");
             labeledPasswordInput("Encryption Password:", ChatPassword, "Shared chat secret");
-            labeledPasswordInput("Server Password:",     ServerPassword, "Shared server secret");
-            labeledPasswordInput("Account Password:",    AccountPassword, "Your account login password");
+            labeledPasswordInput("Server Password:", ServerPassword, "Shared server secret");
+            labeledPasswordInput("Account Password:", AccountPassword, "Your account login password");
 
             ImGui::Separator();
             ImGui::Spacing();
@@ -162,12 +162,12 @@ void FreiaUI::renderConnectionPanel()
         if (ImGui::BeginTabItem("Create Account")) {
             ImGui::Text("Register a new account");
 
-            labeledTextInput("IP:",               IP,                "e.g. 192.168.1.100");
-            labeledTextInput("Port:",             Port,              "e.g. 8080");
-            labeledTextInput("User Name:",        User,              "Your display name");
+            labeledTextInput("IP:", IP, "e.g. 192.168.1.100");
+            labeledTextInput("Port:", Port, "e.g. 8080");
+            labeledTextInput("User Name:", User, "Your display name");
             labeledPasswordInput("Encryption Password:", ChatPassword, "Shared chat secret");
-            labeledPasswordInput("Server Password:",     ServerPassword, "Shared server secret");
-            labeledPasswordInput("Account Password:",    AccountPassword, "Your account login password");
+            labeledPasswordInput("Server Password:", ServerPassword, "Shared server secret");
+            labeledPasswordInput("Account Password:", AccountPassword, "Your account login password");
 
             ImGui::Text("Confirm Password: ");
             ImGui::SameLine(labelWidth);
