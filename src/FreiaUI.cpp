@@ -502,7 +502,7 @@ void FreiaUI::createRoomRender()
 
     if (ImGui::Button("Create Room")) {
         if (validateLoginFields()) {
-            tryConnectAndConfigure(false);
+            createRoom(ChatRoomName, ChatRoomPassword);
         }
     }
     ImGui::EndChild();

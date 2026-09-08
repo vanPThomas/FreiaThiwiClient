@@ -36,6 +36,8 @@ public:
         const std::string& serverPassword,
         const std::string& accountPassword,
         bool isCreate);
+
+    void createRoom(std::string ChatRoomName, std::string ChatRoomPassword);
     
     const std::unordered_set<std::string>& getOnlineUsers() const {
         return onlineUsers;
