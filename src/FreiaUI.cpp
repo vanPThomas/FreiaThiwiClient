@@ -96,6 +96,10 @@ bool FreiaUI::render()
     renderChatPanel();
     renderUserList();
     chatRoomListRender();
+    if(createRoomBool)
+    {
+        createRoomRender();
+    }
 
     if (openOptions)
     {
@@ -117,12 +121,16 @@ bool FreiaUI::render()
     return true;
 }
 
+// =============================================
+// ImGui Windows
+// =============================================
+
 // Render panel to connect to server
 void FreiaUI::renderConnectionPanel()
 {
     ImGui::SetNextWindowPos(ImVec2(50, 50), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSizeConstraints(ImVec2(530, 230), ImVec2(FLT_MAX, FLT_MAX));
-    ImGui::SetNextWindowSize(ImVec2(530, 320), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(541, 333), ImGuiCond_FirstUseEver);
 
     ImGui::Begin("Connection Data");
 
@@ -195,8 +203,8 @@ void FreiaUI::renderConnectionPanel()
 // Render the main chat panel
 void FreiaUI::renderChatPanel()
 {
-    ImGui::SetNextWindowPos(ImVec2(50, 350), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(600, 600), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2(639, 58), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(481, 858), ImGuiCond_FirstUseEver);
 
     ImGui::Begin("Chat Window");
 
@@ -239,34 +247,6 @@ void FreiaUI::renderChatPanel()
     ImGui::End();
 }
 
-// Button to disconnect from server
-void FreiaUI::disconnectButton()
-{
-    if (ImGui::Button("Disconnect"))
-    {
-        if(client)
-        {
-            client->disconnect();
-            delete client;
-            client = nullptr;
-            clearInputFields();
-        }
-    }
-}
-
-// Clear all the input fields
-void FreiaUI::clearInputFields()
-{
-    IP.clear();
-    Port.clear();
-    User.clear();
-    ChatPassword.clear();
-    ServerPassword.clear();
-    AccountPassword.clear();
-    ConfirmAccountPassword.clear();
-    std::memset(inputBuffer, 0, sizeof(inputBuffer));
-}
-
 // Render upper menu bar
 void FreiaUI::renderMenuBar()
 {
@@ -287,34 +267,6 @@ void FreiaUI::renderMenuBar()
 
     ImGui::PopStyleVar(2);
     ImGui::PopStyleColor();
-}
-
-// Call up popup with message
-void FreiaUI::openPopup(const std::string& message)
-{
-    popupMessage = message;
-    popupOpen = true;
-}
-
-// Show popup window if so required
-void FreiaUI::showPopup()
-{
-    if (popupOpen)
-        ImGui::OpenPopup("Error");
-
-    if (ImGui::BeginPopupModal("Error", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
-    {
-        ImGui::TextWrapped("%s", popupMessage.c_str());
-        ImGui::Separator();
-
-        if (ImGui::Button("OK", ImVec2(120, 0)))
-        {
-            popupOpen = false;
-            ImGui::CloseCurrentPopup();
-        }
-
-        ImGui::EndPopup();
-    }
 }
 
 // Render the panel for options
@@ -363,6 +315,11 @@ void FreiaUI::renderOptions()
 // Render the list of connected users
 void FreiaUI::renderUserList()
 {
+    ImGui::SetNextWindowPos(ImVec2(50, 450), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(254, 466), ImGuiCond_FirstUseEver);
+
+    ImGui::Begin("User List");
+
     if (client && client->getIsConnected())
     {
         const auto& users = client->getOnlineUsers();
@@ -380,7 +337,116 @@ void FreiaUI::renderUserList()
     {
         ImGui::TextDisabled("Not connected");
     }
+
+    ImGui::End();
 }
+
+// available room window
+void FreiaUI::chatRoomListRender()
+{
+    ImGui::SetNextWindowPos(ImVec2(350, 450), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(254, 466), ImGuiCond_FirstUseEver);
+
+    ImGui::Begin("Room List");
+
+    if (client && client->getIsConnected())
+    {
+        const auto& rooms = client->getChatRooms();
+
+        ImGui::BeginChild("ChatRooms", ImVec2(180, 0), true);
+        ImGui::Text("Rooms (%zu)", rooms.size());
+        ImGui::Separator();
+
+        for (const auto& room : rooms)
+        {
+            std::string roomname = room.getChatRoomNames();
+            ImGui::TextColored(ImVec4(0.6f, 0.9f, 0.6f, 1.0f), "%s", roomname);
+        }
+        ImGui::EndChild();
+
+        if(ImGui::Button("CreateRoom"))
+        {
+            createRoomBool = true;
+        }
+        if(ImGui::Button("Connect Room"))
+        {
+    
+        }
+    }
+    else
+    {
+        ImGui::TextDisabled("Not connected");
+    }
+    
+    ImGui::End();
+}
+
+// Create room window
+void FreiaUI::createRoomRender()
+{
+    ImGui::SetNextWindowPos(ImVec2(129, 413), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(600, 600), ImGuiCond_FirstUseEver);
+
+    ImGui::Begin("Create Room");
+
+    const auto& rooms = client->getChatRooms();
+    ImGui::Text("Rooms (%zu)", rooms.size());
+    ImGui::Separator();
+    labeledTextInput("Chatroom Name:", ChatRoomName, "e.g. Friends Chatroom");
+    labeledPasswordInput("Password:", ChatRoomPassword, "Shared chat secret");
+
+    ImGui::Separator();
+    ImGui::Spacing();
+
+    if (ImGui::Button("Create Room")) {
+        if (validateCreateChatRoomFields()) {
+            client->createRoom(ChatRoomName, ChatRoomPassword);
+        }
+    }
+    ImGui::End();
+}
+
+// =============================================
+// ImGUI Parts
+// =============================================
+
+// Button to disconnect from server
+void FreiaUI::disconnectButton()
+{
+    if (ImGui::Button("Disconnect"))
+    {
+        if(client)
+        {
+            client->disconnect();
+            delete client;
+            client = nullptr;
+            clearInputFields();
+        }
+    }
+}
+
+// Create password label
+void FreiaUI::labeledPasswordInput(const char* label, std::string& value, const char* hint)
+{
+    ImGui::Text("%s", label);
+    ImGui::SameLine(labelWidth);
+    ImGui::SetNextItemWidth(inputWidth);
+    ImGui::InputTextWithHint(("##" + std::string(label)).c_str(), hint, &value, ImGuiInputTextFlags_Password);
+}
+
+// Create text input labels
+void FreiaUI::labeledTextInput(const char* label, std::string& value, const char* hint)
+{
+    ImGui::Text("%s", label);
+    ImGui::SameLine(labelWidth);
+    ImGui::SetNextItemWidth(inputWidth);
+    ImGui::InputTextWithHint(("##" + std::string(label)).c_str(), hint, &value);
+}
+
+// =============================================
+// Validation
+// =============================================
+
 
 // Check if login fields are correctly formatted
 bool FreiaUI::validateLoginFields()
@@ -406,24 +472,58 @@ bool FreiaUI::validateCreateFields()
     return true;
 }
 
-// Create password label
-void FreiaUI::labeledPasswordInput(const char* label, std::string& value, const char* hint)
+bool FreiaUI::validateCreateChatRoomFields()
 {
-    ImGui::Text("%s", label);
-    ImGui::SameLine(labelWidth);
-    ImGui::SetNextItemWidth(inputWidth);
-    ImGui::InputTextWithHint(("##" + std::string(label)).c_str(), hint, &value, ImGuiInputTextFlags_Password);
+    if (!Validation::isValidChatRoomName(ChatRoomName)) { openPopup("Invalid chatroom Name."); return false; }
+    if (!Validation::isValidPassword(ChatRoomPassword)) { openPopup("Invalid chatroom password."); return false; }
+    return true;
 }
 
-// Create text input labels
-void FreiaUI::labeledTextInput(const char* label, std::string& value, const char* hint)
+// =============================================
+// Additional Parts
+// =============================================
+
+
+// Clear all the input fields
+void FreiaUI::clearInputFields()
 {
-    ImGui::Text("%s", label);
-    ImGui::SameLine(labelWidth);
-    ImGui::SetNextItemWidth(inputWidth);
-    ImGui::InputTextWithHint(("##" + std::string(label)).c_str(), hint, &value);
+    IP.clear();
+    Port.clear();
+    User.clear();
+    ChatPassword.clear();
+    ServerPassword.clear();
+    AccountPassword.clear();
+    ConfirmAccountPassword.clear();
+    std::memset(inputBuffer, 0, sizeof(inputBuffer));
 }
 
+// Call up popup with message
+void FreiaUI::openPopup(const std::string& message)
+{
+    popupMessage = message;
+    popupOpen = true;
+}
+
+// Show popup window if so required
+void FreiaUI::showPopup()
+{
+    if (popupOpen)
+        ImGui::OpenPopup("Error");
+
+    if (ImGui::BeginPopupModal("Error", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::TextWrapped("%s", popupMessage.c_str());
+        ImGui::Separator();
+
+        if (ImGui::Button("OK", ImVec2(120, 0)))
+        {
+            popupOpen = false;
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::EndPopup();
+    }
+}
 
 // Configure client
 bool FreiaUI::tryConnectAndConfigure(bool isCreation)
@@ -455,57 +555,3 @@ bool FreiaUI::tryConnectAndConfigure(bool isCreation)
     return true;
 }
 
-// available room window
-void FreiaUI::chatRoomListRender()
-{
-    if (client && client->getIsConnected())
-    {
-        const auto& rooms = client->getChatRooms();
-
-        ImGui::BeginChild("ChatRooms", ImVec2(180, 0), true);
-        ImGui::Text("Rooms (%zu)", rooms.size());
-        ImGui::Separator();
-
-        for (const auto& room : rooms)
-        {
-            std::string roomname = room.getChatRoomNames();
-            ImGui::TextColored(ImVec4(0.6f, 0.9f, 0.6f, 1.0f), "%s", roomname);
-        }
-        ImGui::EndChild();
-    }
-    else
-    {
-        ImGui::TextDisabled("Not connected");
-    }
-
-    if(ImGui::Button("CreateRoom"))
-    {
-        createRoomRender();
-    }
-    if(ImGui::Button("Connect Room"))
-    {
-
-    }
-}
-
-// Create room window
-void FreiaUI::createRoomRender()
-{
-    const auto& rooms = client->getChatRooms();
-    ImGui::BeginChild("ChatRooms", ImVec2(180, 0), true);
-    ImGui::Text("Rooms (%zu)", rooms.size());
-    ImGui::Separator();
-    labeledTextInput("Chatroom Name:", ChatRoomName, "e.g. Friends Chatroom");
-    labeledPasswordInput("Password:", ChatRoomPassword, "Shared chat secret");
-
-    ImGui::Separator();
-    ImGui::Spacing();
-
-    if (ImGui::Button("Create Room")) {
-        if (validateLoginFields()) {
-            client->createRoom(ChatRoomName, ChatRoomPassword);
-        }
-    }
-    ImGui::EndChild();
-
-}

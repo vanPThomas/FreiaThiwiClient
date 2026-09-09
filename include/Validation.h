@@ -8,4 +8,5 @@ namespace Validation
     [[nodiscard]] bool isValidUser(const std::string& user);
     [[nodiscard]] bool isValidPassword(const std::string& password);
     [[nodiscard]] std::string sanitizeUsername(const std::string& input);
+    [[nodiscard]] bool isValidChatRoomName(const std::string& chatRoomName);
 }

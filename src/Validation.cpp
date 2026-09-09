@@ -69,6 +69,14 @@ bool Validation::isValidPassword(const std::string& password)
     return !password.empty() && password.size() <= 128;
 }
 
+bool Validation::isValidChatRoomName(const std::string& chatRoomName)
+{
+    if (chatRoomName.front() == ' ' || chatRoomName.back() == ' ') {
+        return false;
+    }
+    return !chatRoomName.empty() && chatRoomName.size() <= 32;
+}
+
 // Sanitize user name
 std::string Validation::sanitizeUsername(const std::string& input)
 {

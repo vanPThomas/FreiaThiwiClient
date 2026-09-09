@@ -35,6 +35,7 @@ private:
     void renderUserList();
     bool validateLoginFields();
     bool validateCreateFields();
+    bool validateCreateChatRoomFields();
 
     void labeledPasswordInput(const char* label, std::string& value, const char* hint);
     void labeledTextInput(const char* label, std::string& value, const char* hint);
@@ -82,4 +83,5 @@ private:
     const float labelWidth = 220.0f;
     const float inputWidth = 300.0f;
 
+    bool createRoomBool = false;
 };
