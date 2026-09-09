@@ -39,17 +39,15 @@ public:
 
     void createRoom(std::string ChatRoomName, std::string ChatRoomPassword);
     
-    const std::unordered_set<std::string>& getOnlineUsers() const {
-        return onlineUsers;
-    }
+    // ====================
+    // GETTERS
+    // ====================
 
-    const std::vector<ChatRoom>& getChatRooms() const {
-        return chatRooms;
-    }
+    const std::unordered_set<std::string>& getOnlineUsers() const { return onlineUsers; }
 
-    bool getIsConnected() const {
-        return isConnected;
-    }
+    const std::vector<ChatRoom>& getChatRooms() const { return chatRooms; }
+
+    bool getIsConnected() const { return isConnected; }
     
 private:
 

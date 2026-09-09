@@ -524,7 +524,8 @@ bool ClientConnect::sendWithLengthPrefix(int sock, const std::string& data)
     return true;
 }
 
-void ClientConnect::createRoom(std::string ChatRoomName, std::string ChatRoomPassword)
+void ClientConnect::createRoom(std::string chatRoomName, std::string chatRoomPassword)
 {
-    
+    ChatRoom chatRoom(chatRoomName, chatRoomPassword);
+    chatRooms.push_back(chatRoom);
 }

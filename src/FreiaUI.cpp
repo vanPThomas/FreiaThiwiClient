@@ -360,7 +360,7 @@ void FreiaUI::chatRoomListRender()
         for (const auto& room : rooms)
         {
             std::string roomname = room.getChatRoomNames();
-            ImGui::TextColored(ImVec4(0.6f, 0.9f, 0.6f, 1.0f), "%s", roomname);
+            ImGui::TextColored(ImVec4(0.6f, 0.9f, 0.6f, 1.0f), "%s", roomname.c_str());
         }
         ImGui::EndChild();
 
@@ -394,13 +394,17 @@ void FreiaUI::createRoomRender()
     ImGui::Separator();
     labeledTextInput("Chatroom Name:", ChatRoomName, "e.g. Friends Chatroom");
     labeledPasswordInput("Password:", ChatRoomPassword, "Shared chat secret");
+    labeledPasswordInput("Confirm Password:", ChatRoomPasswordConfirm, "Repeat Password");
 
     ImGui::Separator();
     ImGui::Spacing();
 
-    if (ImGui::Button("Create Room")) {
-        if (validateCreateChatRoomFields()) {
+    if (ImGui::Button("Create Room"))
+    {
+        if (validateCreateChatRoomFields())
+        {
             client->createRoom(ChatRoomName, ChatRoomPassword);
+            createRoomBool = false;
         }
     }
     ImGui::End();
@@ -464,7 +468,8 @@ bool FreiaUI::validateCreateFields()
 {
     if (!validateLoginFields()) return false;
 
-    if (AccountPassword != ConfirmAccountPassword) {
+    if (AccountPassword != ConfirmAccountPassword)
+    {
         openPopup("Account passwords do not match.");
         return false;
     }
@@ -474,8 +479,16 @@ bool FreiaUI::validateCreateFields()
 
 bool FreiaUI::validateCreateChatRoomFields()
 {
+    
     if (!Validation::isValidChatRoomName(ChatRoomName)) { openPopup("Invalid chatroom Name."); return false; }
     if (!Validation::isValidPassword(ChatRoomPassword)) { openPopup("Invalid chatroom password."); return false; }
+
+    if (ChatRoomPassword != ChatRoomPasswordConfirm)
+    {
+        openPopup("Chatroom passwords do not match.");
+        return false;
+    }
+
     return true;
 }
 

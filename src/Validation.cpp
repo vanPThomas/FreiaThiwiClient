@@ -56,11 +56,15 @@ bool Validation::isValidPort(const std::string& portStr)
 // Validate user name
 bool Validation::isValidUser(const std::string& user)
 {
-    if (user.front() == ' ' || user.back() == ' ') {
+    if (user.empty() || user.size() > 32)
+    {
         return false;
     }
-    return !user.empty() && user.size() <= 32;
-
+    if (user.front() == ' ' || user.back() == ' ')
+    {
+        return false;
+    }
+    return true;
 }
 
 // Validate password
@@ -71,10 +75,15 @@ bool Validation::isValidPassword(const std::string& password)
 
 bool Validation::isValidChatRoomName(const std::string& chatRoomName)
 {
-    if (chatRoomName.front() == ' ' || chatRoomName.back() == ' ') {
+    if (chatRoomName.empty() || chatRoomName.size() > 32)
+    {
         return false;
     }
-    return !chatRoomName.empty() && chatRoomName.size() <= 32;
+    if (chatRoomName.front() == ' ' || chatRoomName.back() == ' ')
+    {
+        return false;
+    }
+    return true;
 }
 
 // Sanitize user name
@@ -83,18 +92,21 @@ std::string Validation::sanitizeUsername(const std::string& input)
     std::string clean;
     clean.reserve(input.size());
 
-    for (char c : input) {
+    for (char c : input)
+    {
         if (c >= 32 && c <= 126 && c != '\\')
         {      
             clean += c;
         }
     }
 
-    if (clean.empty()) {
+    if (clean.empty())
+    {
         return "anonymous";
     }
 
-    if (clean.size() > 32) {
+    if (clean.size() > 32)
+    {
         clean.resize(32);
     }
 
