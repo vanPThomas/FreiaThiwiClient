@@ -468,7 +468,7 @@ void FreiaUI::chatRoomListRender()
 
         for (const auto& room : rooms)
         {
-            std::string roomname = room->getChatRoomNames();
+            std::string roomname = room.getChatRoomNames();
             ImGui::TextColored(ImVec4(0.6f, 0.9f, 0.6f, 1.0f), "%s", roomname);
         }
         ImGui::EndChild();
@@ -491,6 +491,7 @@ void FreiaUI::chatRoomListRender()
 // Create room window
 void FreiaUI::createRoomRender()
 {
+    const auto& rooms = client->getChatRooms();
     ImGui::BeginChild("ChatRooms", ImVec2(180, 0), true);
     ImGui::Text("Rooms (%zu)", rooms.size());
     ImGui::Separator();
@@ -502,7 +503,7 @@ void FreiaUI::createRoomRender()
 
     if (ImGui::Button("Create Room")) {
         if (validateLoginFields()) {
-            createRoom(ChatRoomName, ChatRoomPassword);
+            client->createRoom(ChatRoomName, ChatRoomPassword);
         }
     }
     ImGui::EndChild();

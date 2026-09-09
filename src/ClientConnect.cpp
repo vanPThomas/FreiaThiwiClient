@@ -523,3 +523,8 @@ bool ClientConnect::sendWithLengthPrefix(int sock, const std::string& data)
     if (send(sock, data.data(), data.size(), 0) != static_cast<ssize_t>(data.size())) return false;
     return true;
 }
+
+void ClientConnect::createRoom(std::string ChatRoomName, std::string ChatRoomPassword)
+{
+    
+}
