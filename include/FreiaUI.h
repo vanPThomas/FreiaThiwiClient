@@ -84,4 +84,6 @@ private:
     const float inputWidth = 300.0f;
 
     bool createRoomBool = false;
+
+    int selectedRoom = -1;
 };

@@ -357,20 +357,24 @@ void FreiaUI::chatRoomListRender()
         ImGui::Text("Rooms (%zu)", rooms.size());
         ImGui::Separator();
 
-        for (const auto& room : rooms)
+        for (int i = 0; i < static_cast<int>(rooms.size()); ++i)
         {
-            std::string roomname = room.getChatRoomNames();
-            ImGui::TextColored(ImVec4(0.6f, 0.9f, 0.6f, 1.0f), "%s", roomname.c_str());
+            const bool isSelected = (selectedRoom == i);
+            if (ImGui::Selectable(rooms[i].getChatRoomNames().c_str(), isSelected))
+                selectedRoom = i;
+
+            if (isSelected)
+                ImGui::SetItemDefaultFocus();
         }
+
         ImGui::EndChild();
 
         if(ImGui::Button("CreateRoom"))
-        {
             createRoomBool = true;
-        }
+        
         if(ImGui::Button("Connect Room"))
         {
-    
+            const ChatRoom& room = rooms[selectedRoom];
         }
     }
     else
