@@ -353,7 +353,7 @@ void FreiaUI::chatRoomListRender()
     {
         const auto& rooms = client->getChatRooms();
 
-        ImGui::BeginChild("ChatRooms", ImVec2(180, 0), true);
+        ImGui::BeginChild("ChatRooms", ImVec2(180, 300), true);
         ImGui::Text("Rooms (%zu)", rooms.size());
         ImGui::Separator();
 
