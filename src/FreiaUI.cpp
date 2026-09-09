@@ -141,10 +141,12 @@ void FreiaUI::renderConnectionPanel()
     }
 
     // Tabs
-    if (ImGui::BeginTabBar("ConnectionMode", ImGuiTabBarFlags_NoTooltip)) {
+    if (ImGui::BeginTabBar("ConnectionMode", ImGuiTabBarFlags_NoTooltip))
+    {
 
         // Tab 1: Login with existing account
-        if (ImGui::BeginTabItem("Login")) {
+        if (ImGui::BeginTabItem("Login"))
+        {
             ImGui::Text("Use an existing account");
 
             labeledTextInput("IP:", IP, "e.g. 192.168.1.100");
@@ -157,10 +159,10 @@ void FreiaUI::renderConnectionPanel()
             ImGui::Separator();
             ImGui::Spacing();
 
-            if (ImGui::Button("Connect with Account")) {
-                if (validateLoginFields()) {
+            if (ImGui::Button("Connect with Account"))
+            {
+                if (validateLoginFields())
                     tryConnectAndConfigure(false);
-                }
             }
 
             ImGui::EndTabItem();
@@ -185,10 +187,10 @@ void FreiaUI::renderConnectionPanel()
             ImGui::Separator();
             ImGui::Spacing();
 
-            if (ImGui::Button("Create & Connect")) {
-                if (validateCreateFields()) {
+            if (ImGui::Button("Create & Connect"))
+            {
+                if (validateCreateFields())
                     tryConnectAndConfigure(true);
-                }
             }
 
             ImGui::EndTabItem();
@@ -208,42 +210,101 @@ void FreiaUI::renderChatPanel()
 
     ImGui::Begin("Chat Window");
 
-    ImGui::BeginChild("ChatArea", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), true);
-    if (client)
+    const auto& rooms = client->getConnectedChatRooms();
+    if (ImGui::BeginTabBar("ConnectionMode", ImGuiTabBarFlags_NoTooltip))
     {
-        const auto& messages = client->getMessages();
-        ImGui::PushTextWrapPos(0.0f);
-        for (const auto& msg : messages)
+
+        // Tab 1: Main Chatroom
+        if (ImGui::BeginTabItem("Main Chatroom"))
         {
-            ImGui::TextUnformatted(msg.c_str());
+            ImGui::BeginChild("ChatArea", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), true);
+            if (client)
+            {
+                const auto& messages = client->getMessages();
+                ImGui::PushTextWrapPos(0.0f);
+                for (const auto& msg : messages)
+                {
+                    ImGui::TextUnformatted(msg.c_str());
+                }
+                ImGui::PopTextWrapPos();
+        
+                // Auto-scroll only if user is already at bottom
+                if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY() - 1.0f) {
+                    ImGui::SetScrollHereY(1.0f);
+                }
+            }
+            ImGui::EndChild();
+            if (focusInput)
+            {
+                ImGui::SetKeyboardFocusHere();
+                focusInput = false;
+            }
+        
+            ImGui::InputText("##Input", inputBuffer, IM_ARRAYSIZE(inputBuffer));
+            ImGui::SameLine();
+        
+            if (ImGui::Button("Send") || ImGui::IsKeyPressed(ImGuiKey_Enter))
+            {
+                if (client && strlen(inputBuffer) > 0)
+                {
+                    client->sendMessage(inputBuffer);
+                    inputBuffer[0] = '\0';
+                    focusInput = true;
+                }
+            }
+            
+            ImGui::EndTabItem();
         }
-        ImGui::PopTextWrapPos();
-
-        // Auto-scroll only if user is already at bottom
-        if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY() - 1.0f) {
-            ImGui::SetScrollHereY(1.0f);
-        }
-    }
-    ImGui::EndChild();
-    if (focusInput)
-    {
-        ImGui::SetKeyboardFocusHere();
-        focusInput = false;
-    }
-
-    ImGui::InputText("##Input", inputBuffer, IM_ARRAYSIZE(inputBuffer));
-    ImGui::SameLine();
-
-    if (ImGui::Button("Send") || ImGui::IsKeyPressed(ImGuiKey_Enter))
-    {
-        if (client && strlen(inputBuffer) > 0)
+        
+        // Additional Tab: Connected rooms
+        for (int i = 0; i < static_cast<int>(rooms.size()); ++i)
         {
-            client->sendMessage(inputBuffer);
-            inputBuffer[0] = '\0';
-            focusInput = true;
+            const ChatRoom& room = rooms[i];
+            if (ImGui::BeginTabItem(room.getChatRoomName().c_str()))
+            {
+                ImGui::BeginChild("ChatArea", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), true);
+                
+                
+                const auto& messages = room.getChatRoomMessages();
+                ImGui::PushTextWrapPos(0.0f);
+                for (const auto& msg : messages)
+                {
+                    ImGui::TextUnformatted(msg.c_str());
+                }
+                ImGui::PopTextWrapPos();
+        
+                // Auto-scroll only if user is already at bottom
+                if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY() - 1.0f) {
+                    ImGui::SetScrollHereY(1.0f);
+                }
+            
+                ImGui::EndChild();
+                if (focusInput)
+                {
+                    ImGui::SetKeyboardFocusHere();
+                    focusInput = false;
+                }
+            
+                ImGui::InputText("##Input", inputBuffer, IM_ARRAYSIZE(inputBuffer));
+                ImGui::SameLine();
+            
+                if (ImGui::Button("Send") || ImGui::IsKeyPressed(ImGuiKey_Enter))
+                {
+                    if (client && strlen(inputBuffer) > 0)
+                    {
+                        client->sendMessageToRoom(i, inputBuffer);
+                        inputBuffer[0] = '\0';
+                        focusInput = true;
+                    }
+                }
+        
+                ImGui::EndTabItem();
+            }
         }
-    }
 
+
+        ImGui::EndTabBar();
+    }
     ImGui::End();
 }
 
@@ -360,7 +421,7 @@ void FreiaUI::chatRoomListRender()
         for (int i = 0; i < static_cast<int>(rooms.size()); ++i)
         {
             const bool isSelected = (selectedRoom == i);
-            if (ImGui::Selectable(rooms[i].getChatRoomNames().c_str(), isSelected))
+            if (ImGui::Selectable(rooms[i].getChatRoomName().c_str(), isSelected))
                 selectedRoom = i;
 
             if (isSelected)
@@ -375,6 +436,7 @@ void FreiaUI::chatRoomListRender()
         if(ImGui::Button("Connect Room"))
         {
             const ChatRoom& room = rooms[selectedRoom];
+            client->connectToRoom(room);
         }
     }
     else

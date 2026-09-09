@@ -13,3 +13,8 @@ ChatRoom::ChatRoom(std::string chatRoomName, std::string chatRoomPassword)
     , password(chatRoomPassword)
 {
 }
+
+void ChatRoom::addMessage(std::string message)
+{
+    chatMessages.push_back(message);
+}

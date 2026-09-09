@@ -10,11 +10,17 @@ public:
     ChatRoom(std::string chatRoomName, std::vector<std::string> chatMessages);
     ChatRoom(std::string chatRoomName, std::string chatRoomPassword);
 
-    const std::string getChatRoomNames() const
+    const std::string getChatRoomName() const
     {
         return chatRoomName;
     }
 
+    const std::vector<std::string> getChatRoomMessages() const
+    {
+        return chatMessages;
+    }
+
+    void addMessage(std::string message);
 
 private:
     std::string chatRoomName;

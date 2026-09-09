@@ -38,6 +38,7 @@ public:
         bool isCreate);
 
     void createRoom(std::string ChatRoomName, std::string ChatRoomPassword);
+    void connectToRoom(const ChatRoom& chatRoom);
     
     // ====================
     // GETTERS
@@ -46,8 +47,11 @@ public:
     const std::unordered_set<std::string>& getOnlineUsers() const { return onlineUsers; }
 
     const std::vector<ChatRoom>& getChatRooms() const { return chatRooms; }
+    const std::vector<ChatRoom>& getConnectedChatRooms() const { return connectedChatRooms; }
 
     bool getIsConnected() const { return isConnected; }
+
+    void sendMessageToRoom(int roomIndex, const std::string& text);
     
 private:
 
@@ -67,7 +71,8 @@ private:
 
     mutable std::mutex chatMutex;
     std::vector<std::string> chatMessages;
-    std::vector<ChatRoom> chatRooms; 
+    std::vector<ChatRoom> chatRooms;
+    std::vector<ChatRoom> connectedChatRooms;
 
     std::string ip;
     int port;

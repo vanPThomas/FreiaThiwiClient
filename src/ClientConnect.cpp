@@ -529,3 +529,15 @@ void ClientConnect::createRoom(std::string chatRoomName, std::string chatRoomPas
     ChatRoom chatRoom(chatRoomName, chatRoomPassword);
     chatRooms.push_back(chatRoom);
 }
+
+void ClientConnect::connectToRoom(const ChatRoom& chatRoom)
+{
+    connectedChatRooms.push_back(chatRoom);
+}
+
+void ClientConnect::sendMessageToRoom(int roomIndex, const std::string& text)
+{
+    if (roomIndex < 0 || roomIndex >= static_cast<int>(connectedChatRooms.size()))
+        return;
+    connectedChatRooms[roomIndex].addMessage(text);
+}
