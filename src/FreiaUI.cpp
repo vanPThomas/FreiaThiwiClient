@@ -429,14 +429,20 @@ void FreiaUI::chatRoomListRender()
         }
 
         ImGui::EndChild();
-
-        if(ImGui::Button("CreateRoom"))
-            createRoomBool = true;
         
-        if(ImGui::Button("Connect Room"))
+        if(ImGui::Button("CreateRoom"))
+        createRoomBool = true;
+    
+        if (selectedRoom >= 0 && selectedRoom < static_cast<int>(rooms.size()))
         {
             const ChatRoom& room = rooms[selectedRoom];
-            client->connectToRoom(room);
+            if(ImGui::Button("Connect Room"))
+            {
+                // client->connectToRoom(room);
+                roomConnectPasswordRenderBool = true;
+            }
+            if(roomConnectPasswordRenderBool)
+                roomConnectPasswordRender(room);
         }
     }
     else
@@ -473,6 +479,31 @@ void FreiaUI::createRoomRender()
             createRoomBool = false;
         }
     }
+    ImGui::End();
+}
+
+void FreiaUI::roomConnectPasswordRender(const ChatRoom& chatRoom)
+{
+    ImGui::SetNextWindowPos(ImVec2(350, 450), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(100, 100), ImGuiCond_FirstUseEver);
+
+    ImGui::Begin("Room List");
+    std::string roomPassword;
+    labeledPasswordInput("Room Password:", roomPassword, "Room password");
+    
+    if(ImGui::Button("Connect to Room"))
+    {
+        std::string chatRoomPassword = chatRoom.getChatRoomPassword();
+        if(chatRoomPassword == roomPassword)
+        {
+            client->connectToRoom(chatRoom);
+            roomConnectPasswordRenderBool = false;
+        }
+
+        else
+            openPopup("Wrong password");
+    }
+
     ImGui::End();
 }
 

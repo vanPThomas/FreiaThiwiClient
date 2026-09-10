@@ -27,6 +27,7 @@ private:
     void renderMenuBar();
     void chatRoomListRender();
     void createRoomRender();
+    void roomConnectPasswordRender(const ChatRoom& chatRoom);
 
     
     void showPopup();
@@ -84,6 +85,7 @@ private:
     const float inputWidth = 300.0f;
 
     bool createRoomBool = false;
+    bool roomConnectPasswordRenderBool = false;
 
     int selectedRoom = -1;
 };
