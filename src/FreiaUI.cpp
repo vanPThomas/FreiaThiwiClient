@@ -485,7 +485,7 @@ void FreiaUI::createRoomRender()
 void FreiaUI::roomConnectPasswordRender(const ChatRoom& chatRoom)
 {
     ImGui::SetNextWindowPos(ImVec2(350, 450), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(100, 100), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_FirstUseEver);
 
     ImGui::Begin("Enter Room Password");
     std::string roomPassword;
