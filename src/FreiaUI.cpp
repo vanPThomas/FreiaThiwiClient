@@ -259,11 +259,16 @@ void FreiaUI::renderChatPanel()
         // Additional Tab: Connected rooms
         for (int i = 0; i < static_cast<int>(rooms.size()); ++i)
         {
+            ImGui::PushID(i);
             const ChatRoom& room = rooms[i];
             if (ImGui::BeginTabItem(room.getChatRoomName().c_str()))
             {
-                ImGui::BeginChild("ChatArea", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), true);
-                
+
+                const float userCol = 160.0f;
+                const float rowH    = -ImGui::GetFrameHeightWithSpacing();
+                const float chatW   = ImGui::GetContentRegionAvail().x - userCol - ImGui::GetStyle().ItemSpacing.x;
+
+                ImGui::BeginChild("ChatArea", ImVec2(chatW, rowH), true);
                 
                 const auto& messages = room.getChatRoomMessages();
                 ImGui::PushTextWrapPos(0.0f);
@@ -277,8 +282,18 @@ void FreiaUI::renderChatPanel()
                 if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY() - 1.0f) {
                     ImGui::SetScrollHereY(1.0f);
                 }
-            
+                
                 ImGui::EndChild();
+
+                ImGui::SameLine();
+                const auto& users = room.getConnectedUsers();
+                ImGui::BeginChild("Online Users", ImVec2(userCol, rowH), true);
+                ImGui::Text("Online (%zu)", users.size());
+                ImGui::Separator();
+                for (const auto& name : users)
+                    ImGui::TextColored(ImVec4(0.6f, 0.9f, 0.6f, 1.0f), "%s", name.c_str());
+                ImGui::EndChild();
+            
                 if (focusInput)
                 {
                     ImGui::SetKeyboardFocusHere();
@@ -300,8 +315,8 @@ void FreiaUI::renderChatPanel()
         
                 ImGui::EndTabItem();
             }
+            ImGui::PopID();
         }
-
 
         ImGui::EndTabBar();
     }

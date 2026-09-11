@@ -18,3 +18,8 @@ void ChatRoom::addMessage(std::string message)
 {
     chatMessages.push_back(message);
 }
+
+void ChatRoom::addConnectedUser(std::string user)
+{
+    connectedUsers.push_back(user);
+}
