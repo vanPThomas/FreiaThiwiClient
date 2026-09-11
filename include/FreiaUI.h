@@ -58,6 +58,7 @@ private:
     std::string ChatRoomName;
     std::string ChatRoomPassword;
     std::string ChatRoomPasswordConfirm;
+    std::string roomConnectPasswordInput;
 
     bool focusInput = false;
     bool quitRequested = false;

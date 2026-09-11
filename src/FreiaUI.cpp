@@ -438,8 +438,8 @@ void FreiaUI::chatRoomListRender()
             const ChatRoom& room = rooms[selectedRoom];
             if(ImGui::Button("Connect Room"))
             {
-                // client->connectToRoom(room);
                 roomConnectPasswordRenderBool = true;
+                roomConnectPasswordInput.clear();
             }
             if(roomConnectPasswordRenderBool)
                 roomConnectPasswordRender(room);
@@ -487,19 +487,18 @@ void FreiaUI::roomConnectPasswordRender(const ChatRoom& chatRoom)
     ImGui::SetNextWindowPos(ImVec2(350, 450), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(ImVec2(100, 100), ImGuiCond_FirstUseEver);
 
-    ImGui::Begin("Room List");
+    ImGui::Begin("Enter Room Password");
     std::string roomPassword;
-    labeledPasswordInput("Room Password:", roomPassword, "Room password");
-    
-    if(ImGui::Button("Connect to Room"))
+    labeledPasswordInput("Room Password:", roomConnectPasswordInput, "Room password");
+
+    if (ImGui::Button("Connect to Room"))
     {
-        std::string chatRoomPassword = chatRoom.getChatRoomPassword();
-        if(chatRoomPassword == roomPassword)
+        if (chatRoom.getChatRoomPassword() == roomConnectPasswordInput)
         {
             client->connectToRoom(chatRoom);
             roomConnectPasswordRenderBool = false;
+            roomConnectPasswordInput.clear();
         }
-
         else
             openPopup("Wrong password");
     }
