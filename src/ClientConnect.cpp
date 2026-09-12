@@ -32,44 +32,44 @@ void ClientConnect::handleSystemCallError(const std::string &errorMsg)
 int ClientConnect::createClientSocket(const std::string &serverIP, int serverPort)
 {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock == -1)
+    if (sock < 0)
     {
         handleSystemCallError("Failed to create socket");
         return -1;
     }
-
+    
     // Set timeout
     struct timeval tv;
     tv.tv_sec = 3;
     tv.tv_usec = 0;
     setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
     setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
-
+    
     sockaddr_in serverAddress{};
     serverAddress.sin_family = AF_INET;
-    serverAddress.sin_port = htons(serverPort);
-
+    serverAddress.sin_port = htons(static_cast<uint16_t>(serverPort));
+    
     if (inet_pton(AF_INET, serverIP.c_str(), &serverAddress.sin_addr) <= 0)
     {
         handleSystemCallError("Invalid IP address or unsupported format");
         close(sock);
         return -1;
     }
-
-    if (connect(sock, (sockaddr*)&serverAddress, sizeof(serverAddress)) == -1)
+    
+    if (connect(sock, reinterpret_cast<sockaddr*>(&serverAddress), sizeof(serverAddress)) == -1)
     {
+        std::cerr << "connect failed, errno=" << errno << "\n";
         handleSystemCallError("Connection failed");
         close(sock);
         return -1;
     }
-
+    
     tv.tv_sec = 0;
     tv.tv_usec = 0;
     setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
     setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+    
     addMessage("[Connected to server]");
-
-
     return sock;
 }
 
@@ -80,7 +80,7 @@ bool ClientConnect::connectToServer()
         addMessage("[Error] No server password set");
         return false;
     }
-
+    
     // 1. build and encrypt the package
     std::string frame = buildProt2Frame();
     std::string transportCipher = FreiaEncryption::encryptData(frame, serverSessionKey);
@@ -88,12 +88,12 @@ bool ClientConnect::connectToServer()
         addMessage("[Error] Failed to encrypt handshake (transport)");
         return false;
     }
-
+    
     // 2. connect TCP
     clientSocket = createClientSocket(ip, port);
     if (clientSocket == -1)
         return false;
-
+        
     // 3. Send handshake with length prefix
     if (!sendWithLengthPrefix(clientSocket, transportCipher))
     {

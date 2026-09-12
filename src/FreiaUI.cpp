@@ -210,7 +210,10 @@ void FreiaUI::renderChatPanel()
 
     ImGui::Begin("Chat Window");
 
-    const auto& rooms = client->getConnectedChatRooms();
+    if(client)
+    {
+    }
+    
     if (ImGui::BeginTabBar("ConnectionMode", ImGuiTabBarFlags_NoTooltip))
     {
 
@@ -256,68 +259,72 @@ void FreiaUI::renderChatPanel()
             ImGui::EndTabItem();
         }
         
-        // Additional Tab: Connected rooms
-        for (int i = 0; i < static_cast<int>(rooms.size()); ++i)
+        if(client)
         {
-            ImGui::PushID(i);
-            const ChatRoom& room = rooms[i];
-            if (ImGui::BeginTabItem(room.getChatRoomName().c_str()))
+            const auto& rooms = client->getConnectedChatRooms();
+
+            // Additional Tab: Connected rooms
+            for (int i = 0; i < static_cast<int>(rooms.size()); ++i)
             {
-
-                const float userCol = 160.0f;
-                const float rowH    = -ImGui::GetFrameHeightWithSpacing();
-                const float chatW   = ImGui::GetContentRegionAvail().x - userCol - ImGui::GetStyle().ItemSpacing.x;
-
-                ImGui::BeginChild("ChatArea", ImVec2(chatW, rowH), true);
-                
-                const auto& messages = room.getChatRoomMessages();
-                ImGui::PushTextWrapPos(0.0f);
-                for (const auto& msg : messages)
+                ImGui::PushID(i);
+                const ChatRoom& room = rooms[i];
+                if (ImGui::BeginTabItem(room.getChatRoomName().c_str()))
                 {
-                    ImGui::TextUnformatted(msg.c_str());
-                }
-                ImGui::PopTextWrapPos();
-        
-                // Auto-scroll only if user is already at bottom
-                if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY() - 1.0f) {
-                    ImGui::SetScrollHereY(1.0f);
-                }
-                
-                ImGui::EndChild();
-
-                ImGui::SameLine();
-                const auto& users = room.getConnectedUsers();
-                ImGui::BeginChild("Online Users", ImVec2(userCol, rowH), true);
-                ImGui::Text("Online (%zu)", users.size());
-                ImGui::Separator();
-                for (const auto& name : users)
-                    ImGui::TextColored(ImVec4(0.6f, 0.9f, 0.6f, 1.0f), "%s", name.c_str());
-                ImGui::EndChild();
-            
-                if (focusInput)
-                {
-                    ImGui::SetKeyboardFocusHere();
-                    focusInput = false;
-                }
-            
-                ImGui::InputText("##Input", inputBuffer, IM_ARRAYSIZE(inputBuffer));
-                ImGui::SameLine();
-            
-                if (ImGui::Button("Send") || ImGui::IsKeyPressed(ImGuiKey_Enter))
-                {
-                    if (client && strlen(inputBuffer) > 0)
+    
+                    const float userCol = 160.0f;
+                    const float rowH    = -ImGui::GetFrameHeightWithSpacing();
+                    const float chatW   = ImGui::GetContentRegionAvail().x - userCol - ImGui::GetStyle().ItemSpacing.x;
+    
+                    ImGui::BeginChild("ChatArea", ImVec2(chatW, rowH), true);
+                    
+                    const auto& messages = room.getChatRoomMessages();
+                    ImGui::PushTextWrapPos(0.0f);
+                    for (const auto& msg : messages)
                     {
-                        client->sendMessageToRoom(i, inputBuffer);
-                        inputBuffer[0] = '\0';
-                        focusInput = true;
+                        ImGui::TextUnformatted(msg.c_str());
                     }
+                    ImGui::PopTextWrapPos();
+            
+                    // Auto-scroll only if user is already at bottom
+                    if (ImGui::GetScrollY() >= ImGui::GetScrollMaxY() - 1.0f) {
+                        ImGui::SetScrollHereY(1.0f);
+                    }
+                    
+                    ImGui::EndChild();
+    
+                    ImGui::SameLine();
+                    const auto& users = room.getConnectedUsers();
+                    ImGui::BeginChild("Online Users", ImVec2(userCol, rowH), true);
+                    ImGui::Text("Online (%zu)", users.size());
+                    ImGui::Separator();
+                    for (const auto& name : users)
+                        ImGui::TextColored(ImVec4(0.6f, 0.9f, 0.6f, 1.0f), "%s", name.c_str());
+                    ImGui::EndChild();
+                
+                    if (focusInput)
+                    {
+                        ImGui::SetKeyboardFocusHere();
+                        focusInput = false;
+                    }
+                
+                    ImGui::InputText("##Input", inputBuffer, IM_ARRAYSIZE(inputBuffer));
+                    ImGui::SameLine();
+                
+                    if (ImGui::Button("Send") || ImGui::IsKeyPressed(ImGuiKey_Enter))
+                    {
+                        if (client && strlen(inputBuffer) > 0)
+                        {
+                            client->sendMessageToRoom(i, inputBuffer);
+                            inputBuffer[0] = '\0';
+                            focusInput = true;
+                        }
+                    }
+            
+                    ImGui::EndTabItem();
                 }
-        
-                ImGui::EndTabItem();
+                ImGui::PopID();
             }
-            ImGui::PopID();
         }
-
         ImGui::EndTabBar();
     }
     ImGui::End();
