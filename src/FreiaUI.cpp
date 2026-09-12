@@ -210,10 +210,6 @@ void FreiaUI::renderChatPanel()
 
     ImGui::Begin("Chat Window");
 
-    if(client)
-    {
-    }
-    
     if (ImGui::BeginTabBar("ConnectionMode", ImGuiTabBarFlags_NoTooltip))
     {
 
