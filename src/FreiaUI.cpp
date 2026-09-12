@@ -681,4 +681,3 @@ bool FreiaUI::tryConnectAndConfigure(bool isCreation)
 
     return true;
 }
-
