@@ -118,7 +118,8 @@ bool ClientConnect::connectToServer()
 
     uint32_t replyLen = ntohl(replyLenNet);
     if (replyLen == 0 || replyLen > 65536)
-    {  // reasonable max for small reply
+    {  
+        // reasonable max for small reply
         addMessage("[Auth failed] Invalid reply length from server");
         disconnect();
         return false;
