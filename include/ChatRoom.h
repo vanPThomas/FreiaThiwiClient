@@ -1,8 +1,7 @@
 #pragma once
 #include <string>
 #include <vector>
-
-
+#include "FreiaEncryption.h"
 
 class ChatRoom
 {
@@ -29,4 +28,6 @@ private:
     std::vector<std::string> connectedUsers;
     std::string roomCreator;
     std::string roomCreationTime;
+
+    FreiaEncryption::Key roomKey{};
 };
