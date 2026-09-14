@@ -38,14 +38,14 @@ public:
         bool isCreate);
 
     void createRoom(std::string ChatRoomName, std::string ChatRoomPassword);
-    void connectToRoom(const ChatRoom& chatRoom);
+    bool connectToRoom(std::string chatRoomName, std::string chatRoomPassword);
     
     // ====================
     // GETTERS
     // ====================
 
     const std::unordered_set<std::string>& getOnlineUsers() const { return onlineUsers; }
-    const std::vector<ChatRoom>& getChatRooms() const { return chatRooms; }
+    const std::vector<std::string>& getChatRooms() const { return onlineRooms; }
     const std::vector<ChatRoom>& getConnectedChatRooms() const { return connectedChatRooms; }
     bool getIsConnected() const { return isConnected; }
 
@@ -64,6 +64,7 @@ private:
     std::string buildProt1Frame(const std::string& ciphertext) const;
     std::string buildProt2Frame() const;
     std::string buildProt4Frame() const;
+    std::string buildProt5Frame(const std::string& messageType, const ChatRoom& chatRoom);
 
     uint16_t safeParsePort(const std::string& s);
     bool sendWithLengthPrefix(int sock, const std::string& data);
@@ -75,16 +76,16 @@ private:
     std::vector<std::string> chatMessages;
     std::vector<ChatRoom> chatRooms;
     std::vector<ChatRoom> connectedChatRooms;
-
+    
     std::string ip;
     int port;
     std::string user;
     std::string chatPassword;
     std::string serverPassword;
     std::string accountPassword;
-
+    
     const int bufferSize = 10240;
-
+    
     FreiaEncryption::Key sessionKey{};          //E2EE
     FreiaEncryption::Key serverSessionKey{};    //Transport
     FreiaEncryption::Key accountSessionKey{};   //account
@@ -92,7 +93,8 @@ private:
     bool hasServerKey = false;
     bool hasAccountKey = false;
     bool isCreateMode = false;
-
+    
+    std::vector<std::string> onlineRooms;
     std::unordered_set<std::string> onlineUsers;
     bool showUserList = true;
 };

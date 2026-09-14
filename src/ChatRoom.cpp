@@ -12,7 +12,7 @@ ChatRoom::ChatRoom(std::string chatRoomName, std::string chatRoomPassword)
     : chatRoomName(chatRoomName)
     , password(chatRoomPassword)
 {
-    FreiaEncryption::deriveKey(chatRoomPassword);
+    roomKey = FreiaEncryption::deriveKey(chatRoomPassword);
 }
 
 void ChatRoom::addMessage(std::string message)

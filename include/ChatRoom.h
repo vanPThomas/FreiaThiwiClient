@@ -17,6 +17,7 @@ public:
     const std::vector<std::string> getChatRoomMessages() const { return chatMessages; }
     const std::string getChatRoomPassword() const { return password; }
     const std::vector<std::string> getConnectedUsers() const { return connectedUsers; }
+    const FreiaEncryption::Key getRoomKey() const { return roomKey; }
     
     void addMessage(std::string message);
     void addConnectedUser(std::string user);

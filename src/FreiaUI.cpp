@@ -439,9 +439,9 @@ void FreiaUI::chatRoomListRender()
         for (int i = 0; i < static_cast<int>(rooms.size()); ++i)
         {
             const bool isSelected = (selectedRoom == i);
-            if (ImGui::Selectable(rooms[i].getChatRoomName().c_str(), isSelected))
+            if (ImGui::Selectable(rooms[i].c_str(), isSelected))
                 selectedRoom = i;
-
+            
             if (isSelected)
                 ImGui::SetItemDefaultFocus();
         }
@@ -449,11 +449,11 @@ void FreiaUI::chatRoomListRender()
         ImGui::EndChild();
         
         if(ImGui::Button("CreateRoom"))
-        createRoomBool = true;
+            createRoomBool = true;
     
         if (selectedRoom >= 0 && selectedRoom < static_cast<int>(rooms.size()))
         {
-            const ChatRoom& room = rooms[selectedRoom];
+            const std::string& room = rooms[selectedRoom];
             if(ImGui::Button("Connect Room"))
             {
                 roomConnectPasswordRenderBool = true;
@@ -500,20 +500,20 @@ void FreiaUI::createRoomRender()
     ImGui::End();
 }
 
-void FreiaUI::roomConnectPasswordRender(const ChatRoom& chatRoom)
+void FreiaUI::roomConnectPasswordRender(const std::string& chatRoomName)
 {
     ImGui::SetNextWindowPos(ImVec2(350, 450), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_FirstUseEver);
 
     ImGui::Begin("Enter Room Password");
-    std::string roomPassword;
     labeledPasswordInput("Room Password:", roomConnectPasswordInput, "Room password");
 
     if (ImGui::Button("Connect to Room"))
     {
-        if (chatRoom.getChatRoomPassword() == roomConnectPasswordInput)
+        bool connectSuccess = client->connectToRoom(chatRoomName, roomConnectPasswordInput);
+        
+        if (connectSuccess)
         {
-            client->connectToRoom(chatRoom);
             roomConnectPasswordRenderBool = false;
             roomConnectPasswordInput.clear();
         }

@@ -93,13 +93,15 @@ void ClientConnect::handleProtocolPacket(const std::string& encryptedData)
     std::string plaintext =
         FreiaEncryption::decryptData(encryptedData, serverSessionKey);
 
-    if (plaintext.empty()) {
+    if (plaintext.empty())
+    {
         addMessage("[Decryption failed]");
         return;
     }
 
     auto parts = splitByNewline(plaintext);
-    if (parts.empty()) {
+    if (parts.empty())
+    {
         addMessage("[Protocol error] empty packet.");
         return;
     }
@@ -113,7 +115,8 @@ void ClientConnect::handleProtocolPacket(const std::string& encryptedData)
         // 1: username
         // 2: length
         // plus ciphertext bytes after the third newline
-        if (parts.size() < 3) {
+        if (parts.size() < 3)
+        {
             addMessage("[Protocol error] malformed PROT1 header.");
             return;
         }
@@ -121,14 +124,17 @@ void ClientConnect::handleProtocolPacket(const std::string& encryptedData)
         const std::string& messageUser = parts[1];
 
         size_t len = 0;
-        try {
+        try
+        {
             len = std::stoul(parts[2]);
-        } catch (...) {
+        } catch (...)
+        {
             addMessage("[Protocol error] invalid length in PROT1.");
             return;
         }
 
-        if (len == 0 || len > plaintext.size()) {
+        if (len == 0 || len > plaintext.size())
+        {
             addMessage("[Protocol error] PROT1 length out of range.");
             return;
         }
@@ -137,7 +143,8 @@ void ClientConnect::handleProtocolPacket(const std::string& encryptedData)
         std::string cipher = plaintext.substr(plaintext.size() - len);
 
         std::string text = FreiaEncryption::decryptData(cipher, sessionKey);
-        if (text.empty()) {
+        if (text.empty())
+        {
             addMessage("[Chat decryption failed]");
             return;
         }
@@ -146,7 +153,8 @@ void ClientConnect::handleProtocolPacket(const std::string& encryptedData)
     }
     else if (proto == "PROT3")
     {
-        if (parts.size() < 3) {
+        if (parts.size() < 3)
+        {
             addMessage("[Protocol error] Malformed PROT3");
             return;
         }
@@ -157,17 +165,16 @@ void ClientConnect::handleProtocolPacket(const std::string& encryptedData)
         if (msgType == "userList")
         {
             std::string payloadList;
-            for (size_t i = 2; i < parts.size(); ++i) {
+            for (size_t i = 2; i < parts.size(); ++i)
+            {
                 if (i > 2) payloadList += "\n";
                 payloadList += parts[i];
             }
             onlineUsers.clear();
             auto names = splitByNewline(payloadList);
-            for (const auto& name : names) {
-                if (!name.empty()) {
+            for (const auto& name : names) 
+                if (!name.empty()) 
                     onlineUsers.insert(name);
-                }
-            }
             addMessage("[User list received — " + std::to_string(onlineUsers.size()) + " online]");
         }
         else if (msgType == "userJoined")
@@ -185,10 +192,25 @@ void ClientConnect::handleProtocolPacket(const std::string& encryptedData)
                 addMessage("[Left] " + payload);
             }
         }
-        else if (msgType == "userDisconnected") {
+        else if (msgType == "userDisconnected")
+        {
             addMessage("[Server] " + payload);
         }
-        else {
+        else if (msgType == "roomList")
+        {
+            onlineRooms.clear();
+
+            for (size_t i = 2; i < parts.size(); ++i)
+            {
+                if (!parts[i].empty())
+                    onlineRooms.push_back(parts[i]);
+            }
+
+            addMessage("[Room list received — " +
+                    std::to_string(onlineRooms.size()) + " available]");
+        }
+        else
+        {
             addMessage("[Server notice] " + payload + " (" + msgType + ")");
         }
     }
@@ -543,8 +565,7 @@ std::string ClientConnect::buildProt4Frame() const
 {
         std::string prot4Type = isCreateMode ? "CREATE" : "LOGIN";
 
-        std::string accountKeyB64 = FreiaEncryption::base64_encode(
-        std::string(reinterpret_cast<const char*>(accountSessionKey.data()), accountSessionKey.size()));
+        std::string accountKeyB64 = FreiaEncryption::base64_encode(std::string(reinterpret_cast<const char*>(accountSessionKey.data()), accountSessionKey.size()));
 
         std::string prot4Frame = "PROT4\n" + prot4Type + "\n" + user + "\n" + accountKeyB64;
 
@@ -553,28 +574,39 @@ std::string ClientConnect::buildProt4Frame() const
         return prot4Cipher;
 }
 
-std::string ClientConnect::buildProt5Frame(const std::string& messageType)
+std::string ClientConnect::buildProt5Frame(const std::string& messageType, const ChatRoom& chatRoom)
 {
-    std::string prot4Frame = "PROT5" + "\n";
-    if(messageType == "CREATE")
+    std::string prot5Frame = "PROT5\n";
+    if (messageType == "ROOMLIST")
     {
-        prot4Frame += messageType + "\n";
+        prot5Frame += messageType + "\n";
     }
-    else if(messageType == "CONNECT")
+    else if (messageType == "CREATE")
     {
-        prot4Frame += messageType + "\n";
+        FreiaEncryption::Key roomSessionKey = chatRoom.getRoomKey();
+        std::string roomKeyB64 = FreiaEncryption::base64_encode(std::string(reinterpret_cast<const char*>(roomSessionKey.data()), roomSessionKey.size()));
+        prot5Frame += messageType + "\n" + chatRoom.getChatRoomName() + "\n" + user + "\n" + roomKeyB64;
 
+        std::string prot5Cipher = FreiaEncryption::encryptData(prot5Frame, roomSessionKey);
     }
-    else if(message == "ADDMSG")
+    else if (messageType == "CONNECT")
     {
-        prot4Frame += messageType + "\n";
+        FreiaEncryption::Key roomSessionKey = chatRoom.getRoomKey();
+        std::string roomKeyB64 = FreiaEncryption::base64_encode(std::string(reinterpret_cast<const char*>(roomSessionKey.data()), roomSessionKey.size()));
+        prot5Frame += messageType + "\n" + chatRoom.getChatRoomName() + "\n" + user + "\n" + roomKeyB64;
+
+        std::string prot5Cipher = FreiaEncryption::encryptData(prot5Frame, roomSessionKey);
+    }
+    else if (messageType == "ADDMSG")
+    {
+        prot5Frame += messageType + "\n";
     }
     else
     {
-        addMessage("[Info] Unknown PROT3 Message type");
+        addMessage("[Info] Unknown PROT5 Message type");
         return "UNKNOWN";
     }
-    return prot4Frame;
+    return prot5Frame;
 }
 
 // ========================================
@@ -584,14 +616,59 @@ std::string ClientConnect::buildProt5Frame(const std::string& messageType)
 void ClientConnect::createRoom(std::string chatRoomName, std::string chatRoomPassword)
 {
     ChatRoom chatRoom(chatRoomName, chatRoomPassword);
+    std::string prot5Frame = buildProt5Frame("CREATE", chatRoom);
+    sendWithLengthPrefix(clientSocket, prot5Frame);
+
     chatRooms.push_back(chatRoom);
 }
 
-void ClientConnect::connectToRoom(const ChatRoom& chatRoom)
+bool ClientConnect::connectToRoom(std::string chatRoomName, std::string chatRoomPassword)
 {
-    std::string prot4Frame = buildProt3Frame("CONNECT");
+    ChatRoom chatRoom(chatRoomName, chatRoomPassword);
+    std::string prot5Frame = buildProt5Frame("CONNECT", chatRoom);
+    sendWithLengthPrefix(clientSocket, prot5Frame);
+
+    // Receive confirmation
+    uint32_t replyLenNet = 0;
+    int r = recv(clientSocket, &replyLenNet, sizeof(replyLenNet), MSG_WAITALL);
+    if (r != sizeof(replyLenNet))
+    {
+        addMessage("[Auth failed] Server did not respond or connection dropped");
+        disconnect();
+        return false;
+    }
+
+    uint32_t replyLen = ntohl(replyLenNet);
+    if (replyLen == 0 || replyLen > 65536)
+    {  
+        // reasonable max for small reply
+        addMessage("[Auth failed] Invalid reply length from server");
+        disconnect();
+        return false;
+    }
+
+    std::string replyCipher(replyLen, '\0');
+    r = recv(clientSocket, replyCipher.data(), replyLen, MSG_WAITALL);
+    if (r != static_cast<int>(replyLen))
+    {
+        addMessage("[Auth failed] Incomplete server reply");
+        disconnect();
+        return false;
+    }
+
+    // Decrypt server's reply
+    std::string replyPlain = FreiaEncryption::decryptData(replyCipher, serverSessionKey);
+    if (replyPlain.empty())
+    {
+        addMessage("[Auth failed] Server reply decryption failed - wrong server password?");
+        disconnect();
+        return false;
+    }
+
     connectedChatRooms.push_back(chatRoom);
     connectedChatRooms.back().addConnectedUser(user);
+
+    return true;
 }
 
 void ClientConnect::sendMessageToRoom(int roomIndex, const std::string& text)

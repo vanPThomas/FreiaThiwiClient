@@ -27,7 +27,8 @@ private:
     void renderMenuBar();
     void chatRoomListRender();
     void createRoomRender();
-    void roomConnectPasswordRender(const ChatRoom& chatRoom);
+    void roomConnectPasswordRender(const std::string& chatRoomName);
+    
 
     
     void showPopup();
