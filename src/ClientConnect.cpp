@@ -553,6 +553,30 @@ std::string ClientConnect::buildProt4Frame() const
         return prot4Cipher;
 }
 
+std::string ClientConnect::buildProt3Frame(const std::string& messageType)
+{
+    std::string prot4Frame = "PROT4" + "\n";
+    if(messageType == "CREATE")
+    {
+        prot4Frame += messageType + "\n";
+    }
+    else if(messageType == "CONNECT")
+    {
+        prot4Frame += messageType + "\n";
+
+    }
+    else if(message == "ADDMSG")
+    {
+        prot4Frame += messageType + "\n";
+    }
+    else
+    {
+        addMessage("[Info] Unknown PROT3 Message type");
+        return "UNKNOWN";
+    }
+    return prot4Frame;
+}
+
 // ========================================
 // Chatroom functions
 // ========================================
@@ -565,6 +589,7 @@ void ClientConnect::createRoom(std::string chatRoomName, std::string chatRoomPas
 
 void ClientConnect::connectToRoom(const ChatRoom& chatRoom)
 {
+    std::string prot4Frame = buildProt3Frame("CONNECT");
     connectedChatRooms.push_back(chatRoom);
     connectedChatRooms.back().addConnectedUser(user);
 }
