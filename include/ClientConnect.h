@@ -45,10 +45,8 @@ public:
     // ====================
 
     const std::unordered_set<std::string>& getOnlineUsers() const { return onlineUsers; }
-
     const std::vector<ChatRoom>& getChatRooms() const { return chatRooms; }
     const std::vector<ChatRoom>& getConnectedChatRooms() const { return connectedChatRooms; }
-
     bool getIsConnected() const { return isConnected; }
 
     void sendMessageToRoom(int roomIndex, const std::string& text);
@@ -61,8 +59,12 @@ private:
     void addMessage(const std::string& message);
     void handleProtocolPacket(const std::string& encryptedData);
     std::vector<std::string> splitByNewline(const std::string& s);
+
+    // Protocol framework
     std::string buildProt1Frame(const std::string& ciphertext) const;
     std::string buildProt2Frame() const;
+    std::string buildProt4Frame() const;
+
     uint16_t safeParsePort(const std::string& s);
     bool sendWithLengthPrefix(int sock, const std::string& data);
 

@@ -389,14 +389,8 @@ bool ClientConnect::connectToServer()
 
     if (hasAccountKey)
     {
-        std::string prot4Type = isCreateMode ? "CREATE" : "LOGIN";
 
-        std::string accountKeyB64 = FreiaEncryption::base64_encode(
-            std::string(reinterpret_cast<const char*>(accountSessionKey.data()), accountSessionKey.size()));
-
-        std::string prot4Frame = "PROT4\n" + prot4Type + "\n" + user + "\n" + accountKeyB64;
-
-        std::string prot4Cipher = FreiaEncryption::encryptData(prot4Frame, serverSessionKey);
+        std::string prot4Cipher = buildProt4Frame();
         if (prot4Cipher.empty())
         {
             addMessage("[Error] Failed to encrypt PROT4");
@@ -411,6 +405,7 @@ bool ClientConnect::connectToServer()
             return false;
         }
 
+        std::string prot4Type = isCreateMode ? "CREATE" : "LOGIN";
         addMessage("[Info] Sent PROT4 " + prot4Type + " request...");
     }
 
@@ -544,6 +539,19 @@ std::string ClientConnect::buildProt2Frame() const
     return frame;
 }
 
+std::string ClientConnect::buildProt4Frame() const
+{
+        std::string prot4Type = isCreateMode ? "CREATE" : "LOGIN";
+
+        std::string accountKeyB64 = FreiaEncryption::base64_encode(
+        std::string(reinterpret_cast<const char*>(accountSessionKey.data()), accountSessionKey.size()));
+
+        std::string prot4Frame = "PROT4\n" + prot4Type + "\n" + user + "\n" + accountKeyB64;
+
+        std::string prot4Cipher = FreiaEncryption::encryptData(prot4Frame, serverSessionKey);
+
+        return prot4Cipher;
+}
 
 // ========================================
 // Chatroom functions
