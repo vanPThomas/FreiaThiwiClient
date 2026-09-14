@@ -553,9 +553,9 @@ std::string ClientConnect::buildProt4Frame() const
         return prot4Cipher;
 }
 
-std::string ClientConnect::buildProt3Frame(const std::string& messageType)
+std::string ClientConnect::buildProt5Frame(const std::string& messageType)
 {
-    std::string prot4Frame = "PROT4" + "\n";
+    std::string prot4Frame = "PROT5" + "\n";
     if(messageType == "CREATE")
     {
         prot4Frame += messageType + "\n";
