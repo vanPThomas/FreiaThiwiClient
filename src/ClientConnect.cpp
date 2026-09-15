@@ -609,6 +609,75 @@ std::string ClientConnect::buildProt5Frame(const std::string& messageType, const
     return prot5Frame;
 }
 
+bool ClientConnect::processProt5Room(
+    const std::vector<std::string>& parts,
+    std::string& chatRoomName,
+    std::string& password,
+    std::vector<std::string>& chatMessages,
+    std::vector<std::string>& connectedUsers,
+    std::string& roomCreator,
+    std::string& roomCreationTime)
+{
+    chatRoomName.clear();
+    password.clear();
+    chatMessages.clear();
+    connectedUsers.clear();
+    roomCreator.clear();
+    roomCreationTime.clear();
+
+    // PROT5
+    // ROOM
+    // <name>
+    // <password>
+    // MESSAGES
+    // ...
+    // USERS
+    // ...
+    // END
+    // <creator>
+    // <creationTime>
+    if (parts.size() < 7 || parts[0] != "PROT5" || parts[1] != "ROOM")
+        return false;
+
+    chatRoomName = parts[2];
+    password     = parts[3];
+
+    if (parts[4] != "MESSAGES")
+        return false;
+
+    size_t i = 5;
+
+    while (i < parts.size() && parts[i] != "USERS")
+    {
+        chatMessages.push_back(parts[i]);
+        ++i;
+    }
+
+    if (i >= parts.size() || parts[i] != "USERS")
+        return false;
+    ++i;
+
+    while (i < parts.size() && parts[i] != "END")
+    {
+        connectedUsers.push_back(parts[i]);
+        ++i;
+    }
+
+    if (i >= parts.size() || parts[i] != "END")
+        return false;
+    ++i;
+
+    if (i >= parts.size())
+        return false;
+    roomCreator = parts[i++];
+
+    if (i >= parts.size())
+        return false;
+    roomCreationTime = parts[i++];
+
+    return true;
+}
+
 // ========================================
 // Chatroom functions
 // ========================================
@@ -634,7 +703,6 @@ bool ClientConnect::connectToRoom(std::string chatRoomName, std::string chatRoom
     if (r != sizeof(replyLenNet))
     {
         addMessage("[Auth failed] Server did not respond or connection dropped");
-        disconnect();
         return false;
     }
 
@@ -643,7 +711,6 @@ bool ClientConnect::connectToRoom(std::string chatRoomName, std::string chatRoom
     {  
         // reasonable max for small reply
         addMessage("[Auth failed] Invalid reply length from server");
-        disconnect();
         return false;
     }
 
@@ -652,7 +719,6 @@ bool ClientConnect::connectToRoom(std::string chatRoomName, std::string chatRoom
     if (r != static_cast<int>(replyLen))
     {
         addMessage("[Auth failed] Incomplete server reply");
-        disconnect();
         return false;
     }
 
@@ -661,12 +727,71 @@ bool ClientConnect::connectToRoom(std::string chatRoomName, std::string chatRoom
     if (replyPlain.empty())
     {
         addMessage("[Auth failed] Server reply decryption failed - wrong server password?");
-        disconnect();
         return false;
     }
 
-    connectedChatRooms.push_back(chatRoom);
-    connectedChatRooms.back().addConnectedUser(user);
+    std::vector<std::string> lines = splitByNewline(replyPlain);
+    if (lines[0] == "PROT3" && lines[1] == "SUCCESS")
+    {
+        addMessage(lines[2]);
+        replyPlain = "";
+        // Receive room
+        uint32_t replyLenNet = 0;
+        int r = recv(clientSocket, &replyLenNet, sizeof(replyLenNet), MSG_WAITALL);
+        if (r != sizeof(replyLenNet))
+        {
+            addMessage("[Auth failed] Server did not respond or connection dropped");
+            return false;
+        }
+
+        uint32_t replyLen = ntohl(replyLenNet);
+        if (replyLen == 0 || replyLen > 65536)
+        {  
+            // reasonable max for small reply
+            addMessage("[Auth failed] Invalid reply length from server");
+            return false;
+        }
+
+        std::string replyCipher(replyLen, '\0');
+        r = recv(clientSocket, replyCipher.data(), replyLen, MSG_WAITALL);
+        if (r != static_cast<int>(replyLen))
+        {
+            addMessage("[Auth failed] Incomplete server reply");
+            return false;
+        }
+
+        // Decrypt server's reply
+        std::string replyPlain = FreiaEncryption::decryptData(replyCipher, serverSessionKey);
+        if (replyPlain.empty())
+        {
+            addMessage("[Auth failed] Server reply decryption failed - wrong server password?");
+            return false;
+        }
+
+        std::vector<std::string> roomLines = splitByNewline(replyPlain);
+        if (roomLines[0] == "PROT5" && roomLines[1] == "ROOM")
+        {
+            addMessage("[ROOM AUTH] Room info Received");
+            std::string chatRoomName;
+            std::string password;
+            std::vector<std::string> chatMessages;
+            std::vector<std::string> connectedUsers;
+            std::string roomCreator;
+            std::string roomCreationTime;
+
+            if (!processProt5Room(roomLines, chatRoomName, password, chatMessages, connectedUsers, roomCreator, roomCreationTime))
+            {
+                addMessage("[Protocol error] Malformed PROT5 ROOM");
+                return false;
+            }
+            ChatRoom newRoom(chatRoomName, password, chatMessages, connectedUsers, roomCreator, roomCreationTime);
+            connectedChatRooms.push_back(newRoom);
+        }
+
+    }
+
+    // connectedChatRooms.push_back(chatRoom);
+    // connectedChatRooms.back().addConnectedUser(user);
 
     return true;
 }

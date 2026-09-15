@@ -4,9 +4,7 @@
 
 ChatRoom::ChatRoom(std::string chatRoomName, std::vector<std::string> chatMessages)
     : chatRoomName(chatRoomName)
-    , chatMessages(chatMessages)
-{
-}
+    , chatMessages(chatMessages){}
 
 ChatRoom::ChatRoom(std::string chatRoomName, std::string chatRoomPassword)
     : chatRoomName(chatRoomName)
@@ -14,6 +12,14 @@ ChatRoom::ChatRoom(std::string chatRoomName, std::string chatRoomPassword)
 {
     roomKey = FreiaEncryption::deriveKey(chatRoomPassword);
 }
+
+ChatRoom::ChatRoom(std::string chatRoomName, std::string password, std::vector<std::string> chatMessages, std::vector<std::string> connectedUsers, std::string roomCreator, std::string roomCreationTime)
+    : chatRoomName(std::move(chatRoomName))
+    , password(std::move(password))
+    , chatMessages(std::move(chatMessages))
+    , connectedUsers(std::move(connectedUsers))
+    , roomCreator(std::move(roomCreator))
+    , roomCreationTime(std::move(roomCreationTime)){}
 
 void ChatRoom::addMessage(std::string message)
 {

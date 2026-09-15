@@ -8,6 +8,7 @@ class ChatRoom
 public:
     ChatRoom(std::string chatRoomName, std::vector<std::string> chatMessages);
     ChatRoom(std::string chatRoomName, std::string chatRoomPassword);
+    ChatRoom(std::string chatRoomName, std::string password, std::vector<std::string> chatMessages, std::vector<std::string> connectedUsers, std::string roomCreator, std::string roomCreationTime);
 
     // ======================================
     // GETTERS
@@ -18,6 +19,8 @@ public:
     const std::string getChatRoomPassword() const { return password; }
     const std::vector<std::string> getConnectedUsers() const { return connectedUsers; }
     const FreiaEncryption::Key getRoomKey() const { return roomKey; }
+    const std::string getRoomCreator() const { return roomCreator; }
+    const std::string getRoomCreationTime() const {return roomCreationTime; }
     
     void addMessage(std::string message);
     void addConnectedUser(std::string user);

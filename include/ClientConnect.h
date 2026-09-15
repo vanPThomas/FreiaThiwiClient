@@ -66,6 +66,15 @@ private:
     std::string buildProt4Frame() const;
     std::string buildProt5Frame(const std::string& messageType, const ChatRoom& chatRoom);
 
+    bool processProt5Room(
+        const std::vector<std::string>& parts,
+        std::string& chatRoomName,
+        std::string& password,
+        std::vector<std::string>& chatMessages,
+        std::vector<std::string>& connectedUsers,
+        std::string& roomCreator,
+        std::string& roomCreationTime);
+
     uint16_t safeParsePort(const std::string& s);
     bool sendWithLengthPrefix(int sock, const std::string& data);
 
