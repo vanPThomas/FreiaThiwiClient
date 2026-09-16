@@ -686,26 +686,33 @@ void ClientConnect::createRoom(std::string chatRoomName, std::string chatRoomPas
 {
     ChatRoom chatRoom(chatRoomName, chatRoomPassword);
     std::string prot5Frame = buildProt5Frame("CREATE", chatRoom);
-    sendWithLengthPrefix(clientSocket, prot5Frame);
+    std::string transportCipher = FreiaEncryption::encryptData(prot5Frame, serverSessionKey);
+
+    sendWithLengthPrefix(clientSocket, transportCipher);
 
     chatRooms.push_back(chatRoom);
 }
 
 bool ClientConnect::connectToRoom(std::string chatRoomName, std::string chatRoomPassword)
 {
+
+    std::cout << "test1\n";
     ChatRoom chatRoom(chatRoomName, chatRoomPassword);
     std::string prot5Frame = buildProt5Frame("CONNECT", chatRoom);
-    sendWithLengthPrefix(clientSocket, prot5Frame);
+    std::string transportCipher = FreiaEncryption::encryptData(prot5Frame, serverSessionKey);
 
+    sendWithLengthPrefix(clientSocket, transportCipher);
+    
     // Receive confirmation
     uint32_t replyLenNet = 0;
     int r = recv(clientSocket, &replyLenNet, sizeof(replyLenNet), MSG_WAITALL);
+    std::cout << "test2\n";
     if (r != sizeof(replyLenNet))
     {
         addMessage("[Auth failed] Server did not respond or connection dropped");
         return false;
     }
-
+    
     uint32_t replyLen = ntohl(replyLenNet);
     if (replyLen == 0 || replyLen > 65536)
     {  
@@ -713,7 +720,7 @@ bool ClientConnect::connectToRoom(std::string chatRoomName, std::string chatRoom
         addMessage("[Auth failed] Invalid reply length from server");
         return false;
     }
-
+    
     std::string replyCipher(replyLen, '\0');
     r = recv(clientSocket, replyCipher.data(), replyLen, MSG_WAITALL);
     if (r != static_cast<int>(replyLen))
@@ -733,6 +740,7 @@ bool ClientConnect::connectToRoom(std::string chatRoomName, std::string chatRoom
     std::vector<std::string> lines = splitByNewline(replyPlain);
     if (lines[0] == "PROT3" && lines[1] == "SUCCESS")
     {
+        std::cout << "test3\n";
         addMessage(lines[2]);
         replyPlain = "";
         // Receive room
