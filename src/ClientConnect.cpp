@@ -706,7 +706,6 @@ bool ClientConnect::connectToRoom(std::string chatRoomName, std::string chatRoom
     // Receive confirmation
     uint32_t replyLenNet = 0;
     int r = recv(clientSocket, &replyLenNet, sizeof(replyLenNet), MSG_WAITALL);
-    std::cout << "test2\n";
     if (r != sizeof(replyLenNet))
     {
         addMessage("[Auth failed] Server did not respond or connection dropped");
@@ -728,7 +727,7 @@ bool ClientConnect::connectToRoom(std::string chatRoomName, std::string chatRoom
         addMessage("[Auth failed] Incomplete server reply");
         return false;
     }
-
+    
     // Decrypt server's reply
     std::string replyPlain = FreiaEncryption::decryptData(replyCipher, serverSessionKey);
     if (replyPlain.empty())
@@ -736,16 +735,17 @@ bool ClientConnect::connectToRoom(std::string chatRoomName, std::string chatRoom
         addMessage("[Auth failed] Server reply decryption failed - wrong server password?");
         return false;
     }
-
+    
     std::vector<std::string> lines = splitByNewline(replyPlain);
     if (lines[0] == "PROT3" && lines[1] == "SUCCESS")
     {
-        std::cout << "test3\n";
         addMessage(lines[2]);
         replyPlain = "";
         // Receive room
         uint32_t replyLenNet = 0;
+        std::cout << "test2\n";
         int r = recv(clientSocket, &replyLenNet, sizeof(replyLenNet), MSG_WAITALL);
+        std::cout << "test3\n";
         if (r != sizeof(replyLenNet))
         {
             addMessage("[Auth failed] Server did not respond or connection dropped");
