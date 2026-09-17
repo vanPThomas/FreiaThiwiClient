@@ -695,8 +695,6 @@ void ClientConnect::createRoom(std::string chatRoomName, std::string chatRoomPas
 
 bool ClientConnect::connectToRoom(std::string chatRoomName, std::string chatRoomPassword)
 {
-
-    std::cout << "test1\n";
     ChatRoom chatRoom(chatRoomName, chatRoomPassword);
     std::string prot5Frame = buildProt5Frame("CONNECT", chatRoom);
     std::string transportCipher = FreiaEncryption::encryptData(prot5Frame, serverSessionKey);
@@ -743,9 +741,7 @@ bool ClientConnect::connectToRoom(std::string chatRoomName, std::string chatRoom
         replyPlain = "";
         // Receive room
         uint32_t replyLenNet = 0;
-        std::cout << "test2\n";
         int r = recv(clientSocket, &replyLenNet, sizeof(replyLenNet), MSG_WAITALL);
-        std::cout << "test3\n";
         if (r != sizeof(replyLenNet))
         {
             addMessage("[Auth failed] Server did not respond or connection dropped");
