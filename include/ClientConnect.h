@@ -49,7 +49,7 @@ public:
     const std::vector<ChatRoom>& getConnectedChatRooms() const { return connectedChatRooms; }
     bool getIsConnected() const { return isConnected; }
 
-    void sendMessageToRoom(int roomIndex, const std::string& text);
+    void sendMessageToRoom(const std::string& roomName, const std::string& text);
     
 private:
 
@@ -65,6 +65,8 @@ private:
     std::string buildProt2Frame() const;
     std::string buildProt4Frame() const;
     std::string buildProt5Frame(const std::string& messageType, const ChatRoom& chatRoom);
+    std::string createProt5Message(ChatRoom& room, const std::string& text);
+
 
     bool processProt5Room(
         const std::vector<std::string>& parts,

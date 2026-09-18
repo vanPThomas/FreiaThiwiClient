@@ -310,7 +310,7 @@ void FreiaUI::renderChatPanel()
                     {
                         if (client && strlen(inputBuffer) > 0)
                         {
-                            client->sendMessageToRoom(i, inputBuffer);
+                            client->sendMessageToRoom(room.getChatRoomName(), inputBuffer);
                             inputBuffer[0] = '\0';
                             focusInput = true;
                         }

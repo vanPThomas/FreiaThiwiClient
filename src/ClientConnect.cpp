@@ -214,7 +214,8 @@ void ClientConnect::handleProtocolPacket(const std::string& encryptedData)
             addMessage("[Server notice] " + payload + " (" + msgType + ")");
         }
     }
-    else if (proto == "PROT4") {
+    else if (proto == "PROT4")
+    {
         if (parts.size() < 2) {
             addMessage("[Protocol error] Malformed PROT4");
             return;
@@ -222,15 +223,29 @@ void ClientConnect::handleProtocolPacket(const std::string& encryptedData)
 
         std::string status = parts[1];
 
-        if (status == "SUCCESS") {
+        if (status == "SUCCESS")
+        {
             addMessage("[Account success] " + (parts.size() > 2 ? parts[2] : "Authenticated"));
-        } else if (status == "FAIL") {
+        }
+        else if (status == "FAIL")
+        {
             std::string reason = (parts.size() > 2) ? parts[2] : "Unknown";
             addMessage("[Account failed] " + reason);
             isConnected = false;
             disconnect();
-        } else {
+        } else
+        {
             addMessage("[Unknown PROT4 status] " + status);
+        }
+    }
+    else if (proto == "PROT5")
+    {
+        std::string targetRoomName = parts[2];
+
+        for (auto& room : connectedChatRooms)
+        {
+            if(targetRoomName == room.getChatRoomName())
+                room.addMessage(FreiaEncryption::decryptData(parts[3], room.getRoomKey()));
         }
     }
     else
@@ -498,18 +513,20 @@ void ClientConnect::receiveMessages()
 // Send message to server
 void ClientConnect::sendMessage(const std::string& text)
 {
-    if (!isConnected || text.empty()) {
+    if (!isConnected || text.empty())
         return;
-    }
+    
 
-    if (text.size() > 16384) {
+    if (text.size() > 16384)
+    {
         addMessage("[Error] Message too long");
         return;
     }
 
     // 1. Build & encrypt inner payload
     std::string chatCipher = FreiaEncryption::encryptData(text, sessionKey);
-    if (chatCipher.empty()) {
+    if (chatCipher.empty())
+    {
         addMessage("[Error] Failed to encrypt message (E2EE)");
         return;
     }
@@ -518,7 +535,8 @@ void ClientConnect::sendMessage(const std::string& text)
 
     // 2. Encrypt for transport
     std::string transportCipher = FreiaEncryption::encryptData(frame, serverSessionKey);
-    if (transportCipher.empty()) {
+    if (transportCipher.empty())
+    {
         addMessage("[Error] Failed to encrypt message (transport)");
         return;
     }
@@ -597,10 +615,6 @@ std::string ClientConnect::buildProt5Frame(const std::string& messageType, const
 
         std::string prot5Cipher = FreiaEncryption::encryptData(prot5Frame, roomSessionKey);
     }
-    else if (messageType == "ADDMSG")
-    {
-        prot5Frame += messageType + "\n";
-    }
     else
     {
         addMessage("[Info] Unknown PROT5 Message type");
@@ -676,6 +690,18 @@ bool ClientConnect::processProt5Room(
     roomCreationTime = parts[i++];
 
     return true;
+}
+
+std::string ClientConnect::createProt5Message(ChatRoom& room, const std::string& text)
+{
+    std::string frame = "PROT5\n";
+    frame += "MESSAGE\n";
+    frame += room.getChatRoomName();
+    frame += '\n';
+    frame += std::to_string(text.size()); // ciphertext size
+    frame += '\n';
+    frame += text;
+    return frame;
 }
 
 // ========================================
@@ -800,9 +826,53 @@ bool ClientConnect::connectToRoom(std::string chatRoomName, std::string chatRoom
     return true;
 }
 
-void ClientConnect::sendMessageToRoom(int roomIndex, const std::string& text)
+void ClientConnect::sendMessageToRoom(const std::string& roomName, const std::string& text)
 {
-    if (roomIndex < 0 || roomIndex >= static_cast<int>(connectedChatRooms.size()))
+    ChatRoom* room = nullptr;
+    for (ChatRoom& r : connectedChatRooms)
+    {
+        if (r.getChatRoomName() == roomName)
+        {
+            room = &r;
+            break;
+        }
+    }
+
+    if (!room)
         return;
-    connectedChatRooms[roomIndex].addMessage(text);
+
+    std::string message = user + ": " + text;
+    if (!isConnected || message.empty())
+        return;
+    
+    if (message.size() > 16384)
+    {
+        addMessage("[Error] Message too long");
+        return;
+    }
+
+    std::string chatCipher = FreiaEncryption::encryptData(message, sessionKey);
+    if (chatCipher.empty())
+    {
+        addMessage("[Error] Failed to encrypt message (E2EE)");
+        return;
+    }
+
+    std::string frame = createProt5Message(*room, chatCipher);
+
+    std::string transportCipher = FreiaEncryption::encryptData(frame, serverSessionKey);
+    if (transportCipher.empty())
+    {
+        addMessage("[Error] Failed to encrypt message (transport)");
+        return;
+    }
+
+    if (!sendWithLengthPrefix(clientSocket, transportCipher))
+    {
+        addMessage("[Error] Failed to send to server");
+        isConnected = false;
+        return;
+    }
+
+    return;
 }
