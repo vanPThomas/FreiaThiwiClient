@@ -743,7 +743,7 @@ bool ClientConnect::connectToRoom(std::string chatRoomName, std::string chatRoom
         addMessage("[Auth failed] Invalid reply length from server");
         return false;
     }
-    
+    std::cout << "test1\n";
     std::string replyCipher(replyLen, '\0');
     r = recv(clientSocket, replyCipher.data(), replyLen, MSG_WAITALL);
     if (r != static_cast<int>(replyLen))
@@ -781,9 +781,11 @@ bool ClientConnect::connectToRoom(std::string chatRoomName, std::string chatRoom
             addMessage("[Auth failed] Invalid reply length from server");
             return false;
         }
-
+        std::cout << "test2\n";
         std::string replyCipher(replyLen, '\0');
         r = recv(clientSocket, replyCipher.data(), replyLen, MSG_WAITALL);
+        std::cout << "test3\n";
+        
         if (r != static_cast<int>(replyLen))
         {
             addMessage("[Auth failed] Incomplete server reply");
