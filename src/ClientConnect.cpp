@@ -623,6 +623,7 @@ std::string ClientConnect::buildProt5Frame(const std::string& messageType, const
     return prot5Frame;
 }
 
+// process prot5 room
 bool ClientConnect::processProt5Room(
     const std::vector<std::string>& parts,
     std::string& chatRoomName,
@@ -692,6 +693,7 @@ bool ClientConnect::processProt5Room(
     return true;
 }
 
+// Create prot5 message
 std::string ClientConnect::createProt5Message(ChatRoom& room, const std::string& text)
 {
     std::string frame = "PROT5\n";
@@ -708,6 +710,7 @@ std::string ClientConnect::createProt5Message(ChatRoom& room, const std::string&
 // Chatroom functions
 // ========================================
 
+// Create a room
 void ClientConnect::createRoom(std::string chatRoomName, std::string chatRoomPassword)
 {
     ChatRoom chatRoom(chatRoomName, chatRoomPassword);
@@ -719,6 +722,7 @@ void ClientConnect::createRoom(std::string chatRoomName, std::string chatRoomPas
     chatRooms.push_back(chatRoom);
 }
 
+// Connect to a room with password
 bool ClientConnect::connectToRoom(std::string chatRoomName, std::string chatRoomPassword)
 {
     ChatRoom chatRoom(chatRoomName, chatRoomPassword);
@@ -827,7 +831,7 @@ bool ClientConnect::connectToRoom(std::string chatRoomName, std::string chatRoom
 
     return true;
 }
-
+// Send room message to server to send to all copies of the room
 void ClientConnect::sendMessageToRoom(const std::string& roomName, const std::string& text)
 {
     ChatRoom* room = nullptr;
