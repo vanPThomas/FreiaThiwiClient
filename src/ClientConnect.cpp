@@ -579,6 +579,7 @@ std::string ClientConnect::buildProt2Frame() const
     return frame;
 }
 
+// Construct prot4 frame
 std::string ClientConnect::buildProt4Frame() const
 {
         std::string prot4Type = isCreateMode ? "CREATE" : "LOGIN";
@@ -592,6 +593,7 @@ std::string ClientConnect::buildProt4Frame() const
         return prot4Cipher;
 }
 
+// construct prot5 frame
 std::string ClientConnect::buildProt5Frame(const std::string& messageType, const ChatRoom& chatRoom)
 {
     std::string prot5Frame = "PROT5\n";
