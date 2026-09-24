@@ -591,6 +591,7 @@ bool FreiaUI::validateCreateFields()
     return true;
 }
 
+// Validation function for char room creation
 bool FreiaUI::validateCreateChatRoomFields()
 {
     
