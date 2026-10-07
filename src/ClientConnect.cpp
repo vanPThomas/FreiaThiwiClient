@@ -715,8 +715,8 @@ std::string ClientConnect::createProt5Message(ChatRoom& room, const std::string&
 // Create a room
 void ClientConnect::createRoom(std::string chatRoomName, std::string chatRoomPassword)
 {
-    std::string roomKey = FreiaEncryption::deriveKey(chatRoomPassword);
-    ChatRoom chatRoom(chatRoomName, roomKey);
+    FreiaEncryption::Key roomKey = FreiaEncryption::deriveKey(chatRoomPassword);
+    ChatRoom chatRoom(chatRoomName, chatRoomPassword);
     std::string prot5Frame = buildProt5Frame("CREATE", chatRoom);
     std::string transportCipher = FreiaEncryption::encryptData(prot5Frame, serverSessionKey);
 
@@ -768,6 +768,7 @@ bool ClientConnect::connectToRoom(std::string chatRoomName, std::string chatRoom
     }
     
     std::vector<std::string> lines = splitByNewline(replyPlain);
+    std::cout << "test2\n";
     if (lines[0] == "PROT3" && lines[1] == "SUCCESS")
     {
         addMessage(lines[2]);
@@ -788,7 +789,6 @@ bool ClientConnect::connectToRoom(std::string chatRoomName, std::string chatRoom
             addMessage("[Auth failed] Invalid reply length from server");
             return false;
         }
-        std::cout << "test2\n";
         std::string replyCipher(replyLen, '\0');
         r = recv(clientSocket, replyCipher.data(), replyLen, MSG_WAITALL);
         std::cout << "test3\n";
