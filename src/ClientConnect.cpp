@@ -791,7 +791,6 @@ bool ClientConnect::connectToRoom(std::string chatRoomName, std::string chatRoom
         }
         std::string replyCipher(replyLen, '\0');
         r = recv(clientSocket, replyCipher.data(), replyLen, MSG_WAITALL);
-        std::cout << "test3\n";
         
         if (r != static_cast<int>(replyLen))
         {
@@ -806,7 +805,7 @@ bool ClientConnect::connectToRoom(std::string chatRoomName, std::string chatRoom
             addMessage("[Auth failed] Server reply decryption failed - wrong server password?");
             return false;
         }
-
+        
         std::vector<std::string> roomLines = splitByNewline(replyPlain);
         if (roomLines[0] == "PROT5" && roomLines[1] == "ROOM")
         {
@@ -817,12 +816,13 @@ bool ClientConnect::connectToRoom(std::string chatRoomName, std::string chatRoom
             std::vector<std::string> connectedUsers;
             std::string roomCreator;
             std::string roomCreationTime;
-
+            
             if (!processProt5Room(roomLines, chatRoomName, password, chatMessages, connectedUsers, roomCreator, roomCreationTime))
             {
                 addMessage("[Protocol error] Malformed PROT5 ROOM");
                 return false;
             }
+            std::cout << "test3\n";
             ChatRoom newRoom(chatRoomName, password, chatMessages, connectedUsers, roomCreator, roomCreationTime);
             connectedChatRooms.push_back(newRoom);
         }
