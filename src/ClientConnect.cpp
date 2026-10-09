@@ -806,6 +806,7 @@ bool ClientConnect::connectToRoom(std::string chatRoomName, std::string chatRoom
             return false;
         }
         
+        std::cout << "test3\n";
         std::vector<std::string> roomLines = splitByNewline(replyPlain);
         if (roomLines[0] == "PROT5" && roomLines[1] == "ROOM")
         {
@@ -822,7 +823,6 @@ bool ClientConnect::connectToRoom(std::string chatRoomName, std::string chatRoom
                 addMessage("[Protocol error] Malformed PROT5 ROOM");
                 return false;
             }
-            std::cout << "test3\n";
             ChatRoom newRoom(chatRoomName, password, chatMessages, connectedUsers, roomCreator, roomCreationTime);
             connectedChatRooms.push_back(newRoom);
         }
