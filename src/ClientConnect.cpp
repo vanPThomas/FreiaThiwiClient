@@ -792,6 +792,7 @@ bool ClientConnect::connectToRoom(std::string chatRoomName, std::string chatRoom
         std::string replyCipher(replyLen, '\0');
         r = recv(clientSocket, replyCipher.data(), replyLen, MSG_WAITALL);
         
+        std::cout << "test3\n";
         if (r != static_cast<int>(replyLen))
         {
             addMessage("[Auth failed] Incomplete server reply");
@@ -806,7 +807,6 @@ bool ClientConnect::connectToRoom(std::string chatRoomName, std::string chatRoom
             return false;
         }
         
-        std::cout << "test3\n";
         std::vector<std::string> roomLines = splitByNewline(replyPlain);
         if (roomLines[0] == "PROT5" && roomLines[1] == "ROOM")
         {
