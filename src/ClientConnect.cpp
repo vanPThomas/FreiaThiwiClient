@@ -715,7 +715,6 @@ std::string ClientConnect::createProt5Message(ChatRoom& room, const std::string&
 // Create a room
 void ClientConnect::createRoom(std::string chatRoomName, std::string chatRoomPassword)
 {
-    FreiaEncryption::Key roomKey = FreiaEncryption::deriveKey(chatRoomPassword);
     ChatRoom chatRoom(chatRoomName, chatRoomPassword);
     std::string prot5Frame = buildProt5Frame("CREATE", chatRoom);
     std::string transportCipher = FreiaEncryption::encryptData(prot5Frame, serverSessionKey);
