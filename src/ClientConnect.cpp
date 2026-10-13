@@ -749,7 +749,6 @@ bool ClientConnect::connectToRoom(std::string chatRoomName, std::string chatRoom
         addMessage("[Auth failed] Invalid reply length from server");
         return false;
     }
-    std::cout << "test1\n";
     std::string replyCipher(replyLen, '\0');
     r = recv(clientSocket, replyCipher.data(), replyLen, MSG_WAITALL);
     if (r != static_cast<int>(replyLen))
@@ -767,7 +766,6 @@ bool ClientConnect::connectToRoom(std::string chatRoomName, std::string chatRoom
     }
     
     std::vector<std::string> lines = splitByNewline(replyPlain);
-    std::cout << "test2\n";
     if (lines[0] == "PROT3" && lines[1] == "SUCCESS")
     {
         addMessage(lines[2]);
@@ -781,7 +779,6 @@ bool ClientConnect::connectToRoom(std::string chatRoomName, std::string chatRoom
             return false;
         }
 
-        std::cout << "test3\n";
         uint32_t replyLen = ntohl(replyLenNet);
         if (replyLen == 0 || replyLen > 65536)
         {  
@@ -827,9 +824,6 @@ bool ClientConnect::connectToRoom(std::string chatRoomName, std::string chatRoom
         }
 
     }
-
-    // connectedChatRooms.push_back(chatRoom);
-    // connectedChatRooms.back().addConnectedUser(user);
 
     return true;
 }
