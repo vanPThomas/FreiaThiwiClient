@@ -21,7 +21,7 @@ ChatRoom::ChatRoom(std::string chatRoomName, std::string password, std::vector<s
     , roomCreator(std::move(roomCreator))
     , roomCreationTime(std::move(roomCreationTime))
     {
-        roomKey = FreiaEncryption::deriveKey(password);
+        roomKey = FreiaEncryption::deriveKey(this->password);
     }
 
 void ChatRoom::addMessage(std::string message)

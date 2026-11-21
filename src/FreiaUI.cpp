@@ -66,6 +66,10 @@ FreiaUI::FreiaUI()
 // UI deconstructor
 FreiaUI::~FreiaUI()
 {
+    // FreiaUI owns the dynamically allocated ClientConnect instance.
+    delete client;  // Its destructor disconnects and joins its receive thread.
+    client = nullptr;
+
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
@@ -510,15 +514,16 @@ void FreiaUI::roomConnectPasswordRender(const std::string& chatRoomName)
 
     if (ImGui::Button("Connect to Room"))
     {
-        bool connectSuccess = client->connectToRoom(chatRoomName, roomConnectPasswordInput);
-        
-        if (connectSuccess)
+        // The join is asynchronous; true means the request was sent.
+        bool requestSent = client->connectToRoom(chatRoomName, roomConnectPasswordInput);
+
+        if (requestSent)
         {
             roomConnectPasswordRenderBool = false;
             roomConnectPasswordInput.clear();
         }
         else
-            openPopup("Wrong password");
+            openPopup("Could not send room join request.");
     }
 
     ImGui::End();
@@ -656,6 +661,12 @@ void FreiaUI::showPopup()
 // Configure client
 bool FreiaUI::tryConnectAndConfigure(bool isCreation)
 {
+    // Replacing a dropped connection must stop and join its receiver first.
+    if (client) {
+        client->disconnect();
+        delete client;
+        client = nullptr;
+    }
     client = new ClientConnect();
     if (!client) return false;
 

@@ -4,6 +4,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sstream>
+#include <algorithm>
 
 // Constructor
 ClientConnect::ClientConnect(){}
@@ -81,10 +82,28 @@ void ClientConnect::addMessage(const std::string &message)
 }
 
 // Return the chat history
-const std::vector<std::string>& ClientConnect::getMessages() const
+std::vector<std::string> ClientConnect::getMessages() const
 {
     std::lock_guard<std::mutex> lock(chatMutex);
     return chatMessages;
+}
+
+std::unordered_set<std::string> ClientConnect::getOnlineUsers() const
+{
+    std::lock_guard<std::mutex> lock(chatMutex);
+    return onlineUsers;
+}
+
+std::vector<std::string> ClientConnect::getChatRooms() const
+{
+    std::lock_guard<std::mutex> lock(chatMutex);
+    return onlineRooms;
+}
+
+std::vector<ChatRoom> ClientConnect::getConnectedChatRooms() const
+{
+    std::lock_guard<std::mutex> lock(chatMutex);
+    return connectedChatRooms;
 }
 
 // Process the protocols of incoming packages 
@@ -170,27 +189,37 @@ void ClientConnect::handleProtocolPacket(const std::string& encryptedData)
                 if (i > 2) payloadList += "\n";
                 payloadList += parts[i];
             }
-            onlineUsers.clear();
             auto names = splitByNewline(payloadList);
-            for (const auto& name : names) 
-                if (!name.empty()) 
-                    onlineUsers.insert(name);
-            addMessage("[User list received — " + std::to_string(onlineUsers.size()) + " online]");
+            size_t count = 0;
+            {
+                std::lock_guard<std::mutex> lock(chatMutex);
+                onlineUsers.clear();
+                for (const auto& name : names)
+                    if (!name.empty())
+                        onlineUsers.insert(name);
+                count = onlineUsers.size();
+            }
+            addMessage("[User list received — " + std::to_string(count) + " online]");
         }
         else if (msgType == "userJoined")
         {
             if (!payload.empty())
             {
-                onlineUsers.insert(payload);
+                {
+                    std::lock_guard<std::mutex> lock(chatMutex);
+                    onlineUsers.insert(payload);
+                }
                 addMessage("[Joined] " + payload);
             }
         }
         else if (msgType == "userLeft")
         {
-            if (!payload.empty() && onlineUsers.erase(payload))
+            bool removed = false;
             {
-                addMessage("[Left] " + payload);
+                std::lock_guard<std::mutex> lock(chatMutex);
+                if (!payload.empty()) removed = onlineUsers.erase(payload) != 0;
             }
+            if (removed) addMessage("[Left] " + payload);
         }
         else if (msgType == "userDisconnected")
         {
@@ -198,16 +227,17 @@ void ClientConnect::handleProtocolPacket(const std::string& encryptedData)
         }
         else if (msgType == "roomList")
         {
-            onlineRooms.clear();
-
-            for (size_t i = 2; i < parts.size(); ++i)
+            size_t count = 0;
             {
-                if (!parts[i].empty())
-                    onlineRooms.push_back(parts[i]);
+                std::lock_guard<std::mutex> lock(chatMutex);
+                onlineRooms.clear();
+                for (size_t i = 2; i < parts.size(); ++i)
+                    if (!parts[i].empty())
+                        onlineRooms.push_back(parts[i]);
+                count = onlineRooms.size();
             }
-
             addMessage("[Room list received — " +
-                    std::to_string(onlineRooms.size()) + " available]");
+                    std::to_string(count) + " available]");
         }
         else
         {
@@ -232,7 +262,7 @@ void ClientConnect::handleProtocolPacket(const std::string& encryptedData)
             std::string reason = (parts.size() > 2) ? parts[2] : "Unknown";
             addMessage("[Account failed] " + reason);
             isConnected = false;
-            disconnect();
+            shutdown(clientSocket, SHUT_RDWR);
         } else
         {
             addMessage("[Unknown PROT4 status] " + status);
@@ -240,12 +270,47 @@ void ClientConnect::handleProtocolPacket(const std::string& encryptedData)
     }
     else if (proto == "PROT5")
     {
-        std::string targetRoomName = parts[2];
+        if (parts.size() < 3) {
+            addMessage("[Protocol error] Malformed PROT5 header");
+            return;
+        }
 
-        for (auto& room : connectedChatRooms)
+        if (parts[1] == "ROOM")
         {
-            if(targetRoomName == room.getChatRoomName())
-                room.addMessage(FreiaEncryption::decryptData(parts[3], room.getRoomKey()));
+            std::string roomName, wirePassword, creator, creationTime;
+            std::vector<std::string> messages, users;
+            if (!processProt5Room(parts, roomName, wirePassword, messages, users, creator, creationTime)) {
+                addMessage("[Protocol error] Malformed PROT5 ROOM");
+                return;
+            }
+
+            bool accepted = false;
+            {
+                std::lock_guard<std::mutex> lock(chatMutex);
+                auto pending = pendingRoomPasswords.find(roomName);
+                if (pending != pendingRoomPasswords.end()) {
+                    // The server currently returns the encoded room key, not the
+                    // plaintext room password. Keep the password entered locally.
+                    ChatRoom received(roomName, pending->second, messages, users, creator, creationTime);
+                    auto existing = std::find_if(connectedChatRooms.begin(), connectedChatRooms.end(),
+                        [&](const ChatRoom& r) { return r.getChatRoomName() == roomName; });
+                    if (existing != connectedChatRooms.end()) *existing = std::move(received);
+                    else connectedChatRooms.push_back(std::move(received));
+                    pendingRoomPasswords.erase(pending);
+                    accepted = true;
+                }
+            }
+            if (accepted) addMessage("[Room connected] " + roomName);
+            else addMessage("[Protocol warning] Unsolicited room: " + roomName);
+        }
+        else if (parts[1] == "MESSAGE")
+        {
+            if (parts.size() < 4) return;
+            const std::string& targetRoomName = parts[2];
+            std::lock_guard<std::mutex> lock(chatMutex);
+            for (auto& room : connectedChatRooms)
+                if (targetRoomName == room.getChatRoomName())
+                    room.addMessage(FreiaEncryption::decryptData(parts[3], room.getRoomKey()));
         }
     }
     else
@@ -447,7 +512,7 @@ bool ClientConnect::connectToServer()
     }
 
     // Now safe to start background receive thread for normal messages
-    std::thread(&ClientConnect::receiveMessages, this).detach();
+    receiveThread = std::thread(&ClientConnect::receiveMessages, this);
 
     return true;
 }
@@ -455,12 +520,17 @@ bool ClientConnect::connectToServer()
 //Disconnect from server
 void ClientConnect::disconnect()
 {
-    if (isConnected)
-    {
-        isConnected = false;
-        shutdown(clientSocket, SHUT_RDWR);
+    isConnected = false;
+    if (clientSocket >= 0)
+        shutdown(clientSocket, SHUT_RDWR); // Wake the receiver before joining it.
+    if (receiveThread.joinable() && receiveThread.get_id() != std::this_thread::get_id())
+        receiveThread.join();
+    if (clientSocket >= 0) {
         close(clientSocket);
+        clientSocket = -1;
     }
+    std::lock_guard<std::mutex> lock(chatMutex);
+    pendingRoomPasswords.clear();
 }
 
 // Receive messages from server
@@ -507,7 +577,7 @@ void ClientConnect::receiveMessages()
         handleProtocolPacket(encryptedData);
     }
 
-    disconnect();
+    isConnected = false;
 }
 
 // Send message to server
@@ -721,127 +791,45 @@ void ClientConnect::createRoom(std::string chatRoomName, std::string chatRoomPas
 
     sendWithLengthPrefix(clientSocket, transportCipher);
 
-    chatRooms.push_back(chatRoom);
+    {
+        std::lock_guard<std::mutex> lock(chatMutex);
+        chatRooms.push_back(chatRoom);
+    }
 }
 
 // Connect to a room with password
 bool ClientConnect::connectToRoom(std::string chatRoomName, std::string chatRoomPassword)
 {
-    ChatRoom chatRoom(chatRoomName, chatRoomPassword);
-    std::string prot5Frame = buildProt5Frame("CONNECT", chatRoom);
+    if (!isConnected) return false;
+
+    ChatRoom room(chatRoomName, chatRoomPassword);
+    std::string prot5Frame = buildProt5Frame("CONNECT", room);
     std::string transportCipher = FreiaEncryption::encryptData(prot5Frame, serverSessionKey);
+    if (transportCipher.empty()) return false;
 
-    sendWithLengthPrefix(clientSocket, transportCipher);
-    
-    // Receive confirmation
-    uint32_t replyLenNet = 0;
-    int r = recv(clientSocket, &replyLenNet, sizeof(replyLenNet), MSG_WAITALL);
-    if (r != sizeof(replyLenNet))
+    // Only receiveMessages() may read from clientSocket. Record the password
+    // first so the receiver can handle a fast PROT5 ROOM reply.
     {
-        addMessage("[Auth failed] Server did not respond or connection dropped");
+        std::lock_guard<std::mutex> lock(chatMutex);
+        pendingRoomPasswords[chatRoomName] = std::move(chatRoomPassword);
+    }
+    if (!sendWithLengthPrefix(clientSocket, transportCipher)) {
+        std::lock_guard<std::mutex> lock(chatMutex);
+        pendingRoomPasswords.erase(chatRoomName);
         return false;
     }
-    
-    uint32_t replyLen = ntohl(replyLenNet);
-    if (replyLen == 0 || replyLen > 65536)
-    {  
-        // reasonable max for small reply
-        addMessage("[Auth failed] Invalid reply length from server");
-        return false;
-    }
-    std::string replyCipher(replyLen, '\0');
-    r = recv(clientSocket, replyCipher.data(), replyLen, MSG_WAITALL);
-    if (r != static_cast<int>(replyLen))
-    {
-        addMessage("[Auth failed] Incomplete server reply");
-        return false;
-    }
-    
-    // Decrypt server's reply
-    std::string replyPlain = FreiaEncryption::decryptData(replyCipher, serverSessionKey);
-    if (replyPlain.empty())
-    {
-        addMessage("[Auth failed] Server reply decryption failed - wrong server password?");
-        return false;
-    }
-    
-    std::vector<std::string> lines = splitByNewline(replyPlain);
-    if (lines[0] == "PROT3" && lines[1] == "SUCCESS")
-    {
-        addMessage(lines[2]);
-        replyPlain = "";
-        // Receive room
-        uint32_t replyLenNet = 0;
-        int r = recv(clientSocket, &replyLenNet, sizeof(replyLenNet), MSG_WAITALL);
-        if (r != sizeof(replyLenNet))
-        {
-            addMessage("[Auth failed] Server did not respond or connection dropped");
-            return false;
-        }
 
-        uint32_t replyLen = ntohl(replyLenNet);
-        if (replyLen == 0 || replyLen > 65536)
-        {  
-            // reasonable max for small reply
-            addMessage("[Auth failed] Invalid reply length from server");
-            return false;
-        }
-        std::string replyCipher(replyLen, '\0');
-        r = recv(clientSocket, replyCipher.data(), replyLen, MSG_WAITALL);
-        
-        if (r != static_cast<int>(replyLen))
-        {
-            addMessage("[Auth failed] Incomplete server reply");
-            return false;
-        }
-
-        // Decrypt server's reply
-        std::string replyPlain = FreiaEncryption::decryptData(replyCipher, serverSessionKey);
-        if (replyPlain.empty())
-        {
-            addMessage("[Auth failed] Server reply decryption failed - wrong server password?");
-            return false;
-        }
-        
-        std::vector<std::string> roomLines = splitByNewline(replyPlain);
-        if (roomLines[0] == "PROT5" && roomLines[1] == "ROOM")
-        {
-            addMessage("[ROOM AUTH] Room info Received");
-            std::string chatRoomName;
-            std::string password;
-            std::vector<std::string> chatMessages;
-            std::vector<std::string> connectedUsers;
-            std::string roomCreator;
-            std::string roomCreationTime;
-            
-            if (!processProt5Room(roomLines, chatRoomName, password, chatMessages, connectedUsers, roomCreator, roomCreationTime))
-            {
-                addMessage("[Protocol error] Malformed PROT5 ROOM");
-                return false;
-            }
-            ChatRoom newRoom(chatRoomName, password, chatMessages, connectedUsers, roomCreator, roomCreationTime);
-            connectedChatRooms.push_back(newRoom);
-        }
-
-    }
-
-    return true;
+    addMessage("[Room] Join request sent for " + chatRoomName);
+    return true; // Request sent; actual join confirmation is asynchronous.
 }
+
 // Send room message to server to send to all copies of the room
 void ClientConnect::sendMessageToRoom(const std::string& roomName, const std::string& text)
 {
-    ChatRoom* room = nullptr;
-    for (ChatRoom& r : connectedChatRooms)
-    {
-        if (r.getChatRoomName() == roomName)
-        {
-            room = &r;
-            break;
-        }
-    }
-
-    if (!room)
-        return;
+    std::vector<ChatRoom> rooms = getConnectedChatRooms();
+    auto room = std::find_if(rooms.begin(), rooms.end(),
+        [&](const ChatRoom& r) { return r.getChatRoomName() == roomName; });
+    if (room == rooms.end()) return;
 
     std::string message = user + ": " + text;
     if (!isConnected || message.empty())
@@ -853,7 +841,7 @@ void ClientConnect::sendMessageToRoom(const std::string& roomName, const std::st
         return;
     }
 
-    std::string chatCipher = FreiaEncryption::encryptData(message, sessionKey);
+    std::string chatCipher = FreiaEncryption::encryptData(message, room->getRoomKey());
     if (chatCipher.empty())
     {
         addMessage("[Error] Failed to encrypt message (E2EE)");

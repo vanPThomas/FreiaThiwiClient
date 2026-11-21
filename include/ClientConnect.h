@@ -1,5 +1,7 @@
 #pragma once
 #include <mutex>
+#include <atomic>
+#include <unordered_map>
 #include <string>
 #include <vector>
 #include <thread>
@@ -25,8 +27,8 @@ public:
     void disconnect();
     void sendMessage(const std::string& text);
 
-    const std::vector<std::string>& getMessages() const;
-    bool isConnectedToServer() const { return isConnected; }
+    std::vector<std::string> getMessages() const;
+    bool isConnectedToServer() const { return isConnected.load(); }
 
     bool configureWithAccount(
         const std::string& ip,
@@ -44,10 +46,10 @@ public:
     // GETTERS
     // ====================
 
-    const std::unordered_set<std::string>& getOnlineUsers() const { return onlineUsers; }
-    const std::vector<std::string>& getChatRooms() const { return onlineRooms; }
-    const std::vector<ChatRoom>& getConnectedChatRooms() const { return connectedChatRooms; }
-    bool getIsConnected() const { return isConnected; }
+    std::unordered_set<std::string> getOnlineUsers() const;
+    std::vector<std::string> getChatRooms() const;
+    std::vector<ChatRoom> getConnectedChatRooms() const;
+    bool getIsConnected() const { return isConnected.load(); }
 
     void sendMessageToRoom(const std::string& roomName, const std::string& text);
     
@@ -81,12 +83,14 @@ private:
     bool sendWithLengthPrefix(int sock, const std::string& data);
 
     int clientSocket = -1;
-    bool isConnected = false;
+    std::atomic<bool> isConnected{false};
+    std::thread receiveThread;
 
     mutable std::mutex chatMutex;
     std::vector<std::string> chatMessages;
     std::vector<ChatRoom> chatRooms;
     std::vector<ChatRoom> connectedChatRooms;
+    std::unordered_map<std::string, std::string> pendingRoomPasswords;
     
     std::string ip;
     int port;
