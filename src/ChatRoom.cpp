@@ -33,3 +33,9 @@ void ChatRoom::addConnectedUser(std::string user)
 {
     connectedUsers.push_back(user);
 }
+
+void ChatRoom::setConnectedUsers(
+    const std::vector<std::string>& users)
+{
+    connectedUsers = users;
+}

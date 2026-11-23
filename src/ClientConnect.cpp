@@ -303,6 +303,40 @@ void ClientConnect::handleProtocolPacket(const std::string& encryptedData)
             if (accepted) addMessage("[Room connected] " + roomName);
             else addMessage("[Protocol warning] Unsolicited room: " + roomName);
         }
+        else if (parts[1] == "USERS")
+        {
+            std::string roomName;
+            std::vector<std::string> users;
+
+            if (!processProt5Users(parts, roomName, users))
+            {
+                addMessage("[Protocol error] Malformed PROT5 USERS");
+                return;
+            }
+
+            bool foundRoom = false;
+
+            {
+                std::lock_guard<std::mutex> lock(chatMutex);
+
+                for (auto& room : connectedChatRooms)
+                {
+                    if (room.getChatRoomName() == roomName)
+                    {
+                        room.setConnectedUsers(users);
+                        foundRoom = true;
+                        break;
+                    }
+                }
+            }
+
+            if (foundRoom)
+            {
+                addMessage("[Room users updated] " + roomName +
+                        " - " + std::to_string(users.size()) +
+                        " users online");
+            }
+        }
         else if (parts[1] == "MESSAGE")
         {
             if (parts.size() < 4) return;
@@ -865,4 +899,57 @@ void ClientConnect::sendMessageToRoom(const std::string& roomName, const std::st
     }
 
     return;
+}
+
+bool ClientConnect::processProt5Users(const std::vector<std::string>& parts, std::string& roomName, std::vector<std::string>& connectedUsers)
+{
+    roomName.clear();
+    connectedUsers.clear();
+
+    // Expected packet:
+    // PROT5
+    // USERS
+    // <roomName>
+    // <userCount>
+    // <user1>
+    // <user2>
+    // ...
+
+    if (parts.size() < 4)
+        return false;
+
+    if (parts[0] != "PROT5" || parts[1] != "USERS")
+        return false;
+
+    if (parts[2].empty())
+        return false;
+
+    roomName = parts[2];
+
+    size_t userCount = 0;
+
+    try
+    {
+        size_t pos = 0;
+        userCount = std::stoull(parts[3], &pos);
+
+        if (pos != parts[3].size())
+            return false;
+    }
+    catch (...)
+    {
+        return false;
+    }
+
+    // Make sure the packet actually contains
+    // the number of users it claims to contain.
+    if (userCount > parts.size() - 4)
+        return false;
+
+    for (size_t i = 0; i < userCount; ++i)
+    {
+        connectedUsers.push_back(parts[4 + i]);
+    }
+
+    return true;
 }

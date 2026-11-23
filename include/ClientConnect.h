@@ -112,4 +112,10 @@ private:
     std::vector<std::string> onlineRooms;
     std::unordered_set<std::string> onlineUsers;
     bool showUserList = true;
+
+
+
+
+
+    bool processProt5Users(const std::vector<std::string>& parts, std::string& roomName, std::vector<std::string>& connectedUsers);
 };

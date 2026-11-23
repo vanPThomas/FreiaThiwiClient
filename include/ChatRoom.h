@@ -25,6 +25,8 @@ public:
     void addMessage(std::string message);
     void addConnectedUser(std::string user);
 
+    void setConnectedUsers(const std::vector<std::string>& users);
+
 private:
     std::string chatRoomName;
     std::string password;
