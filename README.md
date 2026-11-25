@@ -1,6 +1,6 @@
 # 𐍆𐍂𐌴𐌹𐌰 𐌸𐌹𐍅𐌹 — Freia Thiwi Client
 
-**freia thiwi — “servant of freedom”**  
+**freia thiwi — “servant of freedom”**
 **Version: 0.6.0 (development release)**
 
 The lightweight C++20 Linux desktop client for **Freia Thiwi**, a self-hosted encrypted messaging project. It uses Dear ImGui, GLFW, and OpenGL for a graphical chat interface, with password-based encryption handled in the client.
