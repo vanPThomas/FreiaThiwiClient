@@ -39,7 +39,8 @@ public:
         const std::string& accountPassword,
         bool isCreate);
 
-    void createRoom(std::string ChatRoomName, std::string ChatRoomPassword);
+    bool createRoom(std::string ChatRoomName, std::string ChatRoomPassword);
+    bool leaveRoom(const std::string& roomName);
     bool connectToRoom(std::string chatRoomName, std::string chatRoomPassword);
     
     // ====================
@@ -61,6 +62,7 @@ private:
     void addMessage(const std::string& message);
     void handleProtocolPacket(const std::string& encryptedData);
     std::vector<std::string> splitByNewline(const std::string& s);
+    static bool validBase64(const std::string& value);
 
     // Protocol framework
     std::string buildProt1Frame(const std::string& ciphertext) const;
@@ -84,6 +86,7 @@ private:
 
     int clientSocket = -1;
     std::atomic<bool> isConnected{false};
+    std::atomic<bool> isAccountAuthenticated{false};
     std::thread receiveThread;
 
     mutable std::mutex chatMutex;

@@ -1,6 +1,36 @@
 # Changelog
 All notable changes to **Freia Thiwi Client** will be documented here.
 
+## [0.6.0] - 2026-11-25
+### Added
+- Full `PROT5` chatroom support: create, autojoin, join existing rooms, send/receive encrypted room messages, and leave rooms without disconnecting from the server.
+- Live online-user lists in each room, synchronized from `PROT5 USERS` snapshots.
+- Room-specific handling of `ROOM`, `USERS`, `MESSAGE`, `LEFT`, and `ERROR` packets.
+- Reception and decryption of recent room history from the server's SQLite-backed message store.
+- A **Leave Room** button beside **Send** in the room chat controls.
+
+### Changed
+- Room creation and joining use a separate HMAC-derived room-login token rather than sending the room AES encryption key to the server.
+- Room joining is asynchronous: the existing receive thread owns all socket reads and processes room replies.
+- Client and server now use Base64-safe `PROT5 MESSAGE` payloads to preserve binary ciphertext within newline-delimited frames.
+- The `ChatRoom` online-user list is replaced on each server update; UI reads stay synchronized with the receive thread.
+
+### Fixed
+- Rejoining an already created room no longer hangs waiting for a response that was not sent.
+- Removed competing reads on one socket in the room-join flow.
+- Corrected `FreiaUI` ownership of `ClientConnect`, preventing an invalid-pointer crash during account login.
+- Corrected client room-key derivation after moving the password string.
+- Corrected Base64 padding decoding and room-message delivery for longer/multiline text.
+- Improved disconnect cleanup and repeated room joins.
+
+### Notes
+- Requires the matching **v0.6.0 server** for the updated `PROT5` protocol.
+- Secure ephemeral-key-based room-password exchange is planned; it is not part of this release.
+- End-to-end encryption is not yet security-audited, and AES-256-CBC does not provide authentication against tampering.
+
+---
+
+
 ## [0.5.4] - 2026-02-12
 ### Changed
 - Added sendWithLengthPrefix function for cleaner code.

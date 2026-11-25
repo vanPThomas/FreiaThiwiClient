@@ -300,7 +300,7 @@ void FreiaUI::renderChatPanel()
                     for (const auto& name : users)
                         ImGui::TextColored(ImVec4(0.6f, 0.9f, 0.6f, 1.0f), "%s", name.c_str());
                     ImGui::EndChild();
-                
+
                     if (focusInput)
                     {
                         ImGui::SetKeyboardFocusHere();
@@ -319,6 +319,9 @@ void FreiaUI::renderChatPanel()
                             focusInput = true;
                         }
                     }
+                    ImGui::SameLine();
+                    if (ImGui::Button("Leave Room"))
+                        client->leaveRoom(room.getChatRoomName());
             
                     ImGui::EndTabItem();
                 }
@@ -497,8 +500,10 @@ void FreiaUI::createRoomRender()
     {
         if (validateCreateChatRoomFields())
         {
-            client->createRoom(ChatRoomName, ChatRoomPassword);
-            createRoomBool = false;
+            if (client->createRoom(ChatRoomName, ChatRoomPassword))
+                createRoomBool = false;
+            else
+                openPopup("Could not create room: check your account login and connection.");
         }
     }
     ImGui::End();

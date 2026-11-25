@@ -1,321 +1,149 @@
-# 𐍆𐍂𐌴𐌹𐌰 𐌸𐌹𐍅𐌹  
-**freia thiwi — "servant of freedom"**
+# 𐍆𐍂𐌴𐌹𐌰 𐌸𐌹𐍅𐌹 — Freia Thiwi Client
 
-A lightweight, end-to-end encrypted C++ chat client using ImGui and TCP sockets.
-Designed for oppressed, restricted, and privacy-seeking users who deserve safe communication – even on obsolete hardware.
+**freia thiwi — “servant of freedom”**  
+**Version: 0.6.0 (development release)**
 
----
+The lightweight C++20 Linux desktop client for **Freia Thiwi**, a self-hosted encrypted messaging project. It uses Dear ImGui, GLFW, and OpenGL for a graphical chat interface, with password-based encryption handled in the client.
 
-## Core Philosophy
+> *“The server serves the users. The messages belong to the users.”*
 
-> *“The server serves the users.  
-> The messages belong to the users.”*
+Freia Thiwi is built with privacy, modest hardware requirements, and hands-on systems programming in mind. This is the **client** repository. The companion repository is [vanPThomas/FreiaThiwi](https://github.com/vanPThomas/FreiaThiwi).
 
-- No plaintext messages stored or readable on the server  
-- Dual-layer encryption (Transport + E2EE)  
-- Learning by building everything manually: sockets, protocol, crypto, routing
+## What's included in 0.6.0
 
-This project is not a wrapper around an existing library.  
-It is a deep dive into systems programming, networking, and cryptography.
+- Graphical login and account creation, main chat, available-room list, and chatroom tabs.
+- Create a password-protected room and automatically join it; join an existing room with its password.
+- View the current online users in each room, send/receive room messages, and leave a room without disconnecting from the server.
+- Receive recent persisted encrypted messages on joining a room.
+- Main-chat and room-message encryption happens on the client; only the encrypted room message bodies are sent to the server.
+- Background socket receiver handles incoming protocol packets; UI snapshots are protected by mutexes.
 
-This repo is the client side of the Freia Thiwi Project.
+This release completes the initial **`PROT5` chatroom workflow** (creation, joining, messaging, live member lists, leaving, and SQLite persistence). Server and client **v0.6.0 should be upgraded together**: the room protocol changed from previous development versions.
 
----
+## How the system works
 
-## Features (planned / in progress)
+Three independent passwords have different roles:
 
-Client side encryption with a shared private password for symmetrical encryption.
-Server encryption to hide usernames and protocols.
-Unique protocol system.
-Accounts and users with client side encrypted user data stored on the server but unreadable by the server.
-Password share feature using asymmetrical encryption using temporary public and private keys.
-File sharing.
-and much more to follow.
+| Password | Purpose | Server access |
+|---|---|---|
+| Server password | Derives the transport key for all framed packets | Server and clients share it |
+| Account password | Derives account credentials for `PROT4` registration/login | Server stores a Base64-encoded derived key for comparison; not the typed password |
+| Main-chat / room password | Derives client-side keys to encrypt chat content | Server relays content without the message-decryption key; each room has its own password |
 
----
+These mechanisms are **not equivalent to a formally verified or audited secure messenger**; read [Security status](#security-status) before relying on the program for sensitive communications.
 
-## Architecture Overview
+### TCP packet framing
 
-- The server routes messages but cannot decrypt them.
-- Clients encrypt/decrypt messages using a shared secret password.
-- Future enhancement: asymmetric bootstrap to exchange passwords securely.
+Each TCP packet consists of a **4-byte network-order unsigned length** followed by that many bytes of transport-encrypted data. After transport decryption the frame starts with a protocol name; most fields are newline-separated. The server has a 64 KiB transport-packet limit in v0.6.0.
 
----
+### Protocols
 
-## Wire format (all PROTs)
+| Protocol | Direction | Function |
+|---|---|---|
+| `PROT1` | Client → server → other clients | Main/public-chat messages; body separately encrypted by sender |
+| `PROT2` | Client ↔ server | Server-password transport handshake and display-name claim |
+| `PROT3` | Server → client(s) | Server-wide presence, room-name lists, and notices |
+| `PROT4` | Client ↔ server | Account `CREATE` / `LOGIN`; `SUCCESS` / `FAIL` |
+| `PROT5` | Client ↔ server | Persistent password-protected chatrooms |
 
-Every packet on the TCP socket is:
+A typical session is: encrypted `PROT2` handshake → `PROT4` account authentication → `PROT3` online-user and room lists → optional `PROT1` main chat or `PROT5` room actions. A `PROT2` display-name claim alone is **not** a logged-in account; the server requires successful `PROT4` authentication before room operations.
 
-1. **4-byte length prefix** — `uint32_t` in **network byte order** (`htonl` / `ntohl`), equal to the size of the following blob  
-2. **Transport ciphertext** — that many bytes, encrypted with the **server password** key (`serverSessionKey` on the client, `serverKey` on the server)
+### PROT5 chatrooms
 
-Nobody sends plaintext frames on the wire.
+Client requests (inside the transport-encrypted frame):
 
-After transport decrypt, the plaintext frame always starts with a type line:
-
-```
-PROT<n>
-…
-```
-
-Fields are separated by `\n`. Unknown `PROT` types should be ignored (client already logs `[Unknown protocol]`). Do not reuse or reshape an old PROT to add features; add a new number.
-
-### Keys
-
-| Key | Derived from | Who can use it | Purpose |
-|---|---|---|---|
-| Transport | Server password | Client and server | Wrap every frame |
-| Chat (E2EE) | Shared chat password | Clients only | Inner body of PROT1 |
-| Account | Account password | Client + stored verifier on server | PROT4 create / login |
-
-The server can read PROT2 / PROT3 / PROT4 and the *headers* of PROT1. It must not be able to read the PROT1 chat body.
-
----
-
-### PROT2 — Handshake (connect)
-
-**When:** First bytes after TCP connect. No chat until this succeeds.
-
-**Client → server**
-
-```
-PROT2
+```text
+PROT5
+CREATE|CONNECT
+<room_name>
 <username>
+<room_login_token_base64>
 ```
 
-**Server → that client**
-
-```
-PROT2
-Welcome <username>!
-```
-
-**What it is for**
-
-- Prove both sides share the server password (decrypt must work)
-- Bind this socket to a display name (`socketToUsername`)
-- After OK: server broadcasts `userJoined`, sends that client a `userList`, client may send PROT4, then starts the receive loop
-
-**Failure:** bad length, decrypt fail, or first line not `PROT2` → socket closed. Client treats a reply that is not `PROT2` as auth failure.
-
----
-
-### PROT4 — Accounts
-
-**When:** Immediately after a successful PROT2, if the client has an account password. Optional in principle; current client always sends it when configured with an account.
-
-**Client → server**
-
-```
-PROT4
-CREATE|LOGIN
-<username>
-<accountKeyBase64>
+```text
+PROT5
+LEAVE
+<room_name>
 ```
 
-`accountKeyBase64` is the derived account key, base64-encoded. The server stores / compares that verifier in SQLite (`accounts.db`). It does not receive the account password as typed.
-
-**Server → that client**
-
-```
-PROT4
-SUCCESS
-<message>
+```text
+PROT5
+MESSAGE
+<room_name>
+<message_ciphertext_base64>
 ```
 
-```
-PROT4
-FAIL
-<reason>
-```
+Server responses/events include:
 
-**What it is for**
-
-- `CREATE` — insert username + key if the name is free  
-- `LOGIN` — accept only if name exists and key matches  
-
-On `FAIL`, the current client disconnects. On `SUCCESS`, the TCP session continues into normal chat.
-
-This is **identity**, not E2EE. It does not replace the chat password.
-
----
-
-### PROT1 — Main chat (E2EE relay)
-
-**When:** User hits Send on the **Main Chatroom** tab (`ClientConnect::sendMessage`).
-
-**Client builds (plaintext inside the transport wrap)**
-
-```
-PROT1
-<username>
-<innerCipherLength>
-<innerCiphertext>
-```
-
-Steps on send:
-
-1. Encrypt the typed text with the **chat** key → `innerCiphertext`  
-2. Build the frame above (`innerCipherLength` = byte size of that blob)  
-3. Encrypt the whole frame with the **server** key  
-4. Send length prefix + transport ciphertext  
-5. Local echo: `user: text`
-
-**Server**
-
-- Transport-decrypts  
-- Checks it is PROT1 and that the length field is sane  
-- **Forwards the original transport ciphertext** to every other connected socket  
-- Does not decrypt `innerCiphertext`, does not store the message  
-
-**Receiving client**
-
-- Transport-decrypt  
-- Parse user + length  
-- Take the **last N bytes** of the frame as ciphertext (so the body may contain `\n`)  
-- Chat-decrypt with the chat key  
-- Append `username: text` to the main tab history  
-
-**What it is for:** the global lobby channel only. Room tabs do **not** use PROT1 today.
-
----
-
-### PROT3 — Presence / server notices
-
-**When:** Server-originated. Clients do not send PROT3.
-
-**Frame**
-
-```
-PROT3
-<messageType>
-<payload>
-```
-
-`payload` may itself contain extra `\n` lines (user lists).
-
-| `messageType` | Payload | Who gets it | Client effect |
-|---|---|---|---|
-| `userJoined` | username | everyone | add to online set, system line |
-| `userLeft` | username | everyone | remove from online set, system line |
-| `userDisconnected` | text (e.g. `Name disconnected.`) | everyone | system line |
-| `userList` | names, one per line | one client (usually the one who just joined) | replace online set |
-
-**What it is for:** who is on the server, not chat text. Encrypted only with the transport key, which is correct — the server must build these frames.
-
----
-
-### Not a PROT (yet)
-
-| Action | Where it lives now |
+| Response | Purpose |
 |---|---|
-| Create room | `ClientConnect::createRoom` → local `chatRooms` |
-| Open room tab | `connectToRoom` → local `connectedChatRooms` |
-| Send in a room tab | `sendMessageToRoom` → that `ChatRoom`’s vector only |
+| `PROT5 ROOM` | Room metadata and the initial online-user snapshot; sent on successful join |
+| `PROT5 USERS` | Complete replacement online-user list (`room_name`, count, usernames) |
+| `PROT5 MESSAGE` | Room-only ciphertext broadcast; also used to replay recent stored history |
+| `PROT5 LEFT` | Confirms leaving a room |
+| `PROT5 ERROR` | Reports a room-specific error (including wrong password) |
 
-A future room protocol should be a **new number**, leaving PROT1 as main chat.
+Creating a room automatically joins its creator. `ROOM` is sent before history and `USERS` updates. Messages are Base64-encoded *inside* the newline-delimited protocol so encrypted binary data cannot break parsing. Messages are routed only to currently joined sockets; disconnecting removes the socket from live room membership, and remaining participants receive updated user lists. Joining again requires the room password.
 
----
+### Client-side room keys
 
-### Typical session
+Each room's message-encryption key is derived locally from its password. For room creation and joining, the client produces a separate HMAC-based login token from that key; it does **not** transmit the AES room key as the room credential. The server checks the token against a salted stored verifier. A client must know the room password to decrypt messages returned from persistent history.
 
-```
-TCP connect
-  client  PROT2          →  server
-  server  PROT2 welcome  →  client
-  server  PROT3 userJoined / userList
-  client  PROT4 CREATE|LOGIN
-  server  PROT4 SUCCESS|FAIL
+Room names, online presence, and account identity are available to the server; **message content is encrypted separately**. The application has no built-in secure invitation/password-exchange workflow in v0.6.0.
 
-  then, any time:
-  client  PROT1  ↔  server forwards PROT1 to others
-  server  PROT3  →  clients on join/leave
-```
+## Build and run (Linux)
 
----
+**Dependencies:** CMake 3.16+, a C++20 compiler, OpenSSL development headers, GLFW3, OpenGL development headers, and `pkg-config`. Dear ImGui sources are included in this repository.
 
-### Compatibility rule
-
-Add features as **new PROT numbers**. Keep the length prefix and transport wrap unchanged. An old peer should still speak PROT1–4 while a newer one also speaks rooms.
-
----
-
-## Performance Testing (Server Benchmark)
-
-Freia Thiwi has been benchmarked on extremely low-end hardware with outstanding results.
-
-Hardware:
-
-- Dell Inspiron 1545 (2009)
-- Intel Celeron 900 @ 2.20 GHz (single core)
-- 2 GB DDR2 RAM
-- Ubuntu Server 64-bit
-
-Load:
-- 2 simultaneous clients (LAN)
-- Continuous message spam (no idle time)
-
-Resource Usage:
-
-- Metric:	            Result
-- CPU:	                ~0.0%
-- RAM:	                ~0.2% (~4 MB)
-- File Descriptors: 	3
-- Stability:            No packet loss, no stalls
-- Throughput:           Instant Message delivery
-
-Verdict
-Ultra-lightweight. Near-zero overhead. Runs flawlessly on 15-year-old hardware.
-
-Freia Thiwi’s network loop and memory model are efficient enough to run on:
-
-- decade-old laptops
-- Raspberry Pi Zero
-- embedded boards
-- home servers
-- virtual private servers with minimal resources
-
-This makes it ideal for self-hosted, low-power, and always-on deployments.
-
----
-
-## Build Instructions (Linux)
+On Debian/Ubuntu:
 
 ```bash
-git clone <repo>
-cd <repo>
-mkdir build && cd build
-cmake ..
-cmake --build . -j$(nproc)
-./freia-thiwi-client
-
-## Build Dependencies
-
-### Debian / Ubuntu / Lubuntu
 sudo apt update
-sudo apt install build-essential cmake git libglfw3-dev libgl1-mesa-dev libssl-dev
-
-### Arch
-sudo pacman -Syu
-sudo pacman -S base-devel cmake git glfw-wayland
-
-(Adjust GLFW package if using X11.)
-
+sudo apt install build-essential cmake git pkg-config libssl-dev libglfw3-dev libgl1-mesa-dev
 ```
 
-Name Origin
+On Arch Linux:
 
-Freia Thiwi is Gothic:
-- 𐍆𐍂𐌴𐌹𐌰 (freia) — free, belonging to no master
-- 𐌸𐌹𐍅𐌹 (thiwi) — maid, servant, helper
+```bash
+sudo pacman -S --needed base-devel cmake git pkgconf openssl glfw mesa
+```
 
-The servant of freedom. A system that serves the people, not the authorities.
+```bash
+git clone https://github.com/vanPThomas/FreiaThiwiClient.git
+cd FreiaThiwiClient
+cmake -S . -B build
+cmake --build build -j
+cd bin
+./freia-thiwi-client
+```
 
-Final Note
+Run from `bin/` so the relative `fonts/` path resolves. To connect, enter the server address and port, the server password, a username/account password, and a main-chat password. Use the **same room password** as other participants in that room. The corresponding [server repository](https://github.com/vanPThomas/FreiaThiwi) must be running.
 
-This project is built with a single goal:
+## Security status
 
-No dictatorship, corporation, or government should have a monopoly on communication.
+**v0.6.0 is an experimental/development release, not a security-audited product.**
 
-If this resonates with you:
-Follow development, contribute by giving tips and ideas, and help bring secure speech to those who need it most.
+- Transport and chat-body encryption currently use **AES-256-CBC**. CBC alone does **not** authenticate ciphertext or prevent active tampering; authenticated encryption (for example, AES-GCM) is an important future upgrade.
+- Password-to-key derivation currently uses PBKDF2-HMAC-SHA256 with a fixed/empty salt for the general client/server keys. The account verifier in `accounts.db` is a reusable derived value, not a modern salted server-side password hash.
+- Room verifiers are salted, but human-chosen room passwords can still be weak and subject to guessing attacks. Room metadata and the existence of messages are visible to the server.
+- The server password is shared by all clients of a server. The present transport design is not a substitute for a fully authenticated end-to-end key exchange or a security review.
+- **Ephemeral public/private-key-based secure password/invitation exchange is planned, not implemented.** Do not assume keys are exchanged securely merely because message bodies are encrypted once everyone knows the same password.
+
+Avoid using Freia Thiwi to protect high-risk communications until these security limitations have been addressed and independently reviewed.
+
+## Roadmap (not yet implemented)
+
+- Authenticated encryption and protocol/security review.
+- Authenticated secure exchange of room passwords/invitations using ephemeral key material (and a design for verifying recipient identities).
+- Additional usability improvements, testing, and reliability hardening.
+- Potential file sharing and further messaging features.
+
+The goal is a **small, useful, maintainable messenger**, not an endlessly expanding list of prerequisites for 1.0.
+
+## Project name and purpose
+
+Freia Thiwi is Gothic: **𐍆𐍂𐌴𐌹𐌰** (*freia*, free) and **𐌸𐌹𐍅𐌹** (*thiwi*, servant/helper). *The servant of freedom.*
+
+The project is intended to make independent communication more accessible, including on older and inexpensive computers. Contributions, testing, and constructive security feedback are welcome.
+
+See [CHANGELOG.md](CHANGELOG.md) for the release history. Licensed under the terms in [LICENSE](LICENSE).

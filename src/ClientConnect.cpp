@@ -5,6 +5,8 @@
 #include <netinet/in.h>
 #include <sstream>
 #include <algorithm>
+#include <cerrno>
+#include <openssl/hmac.h>
 
 // Constructor
 ClientConnect::ClientConnect(){}
@@ -65,11 +67,12 @@ int ClientConnect::createClientSocket(const std::string &serverIP, int serverPor
         return -1;
     }
     
+    // Keep the initial receive timeout until the PROT2 handshake completes.
+    // Background receive can subsequently wait without a timeout.
     tv.tv_sec = 0;
     tv.tv_usec = 0;
     setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
-    setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
-    
+
     addMessage("[Connected to server]");
     return sock;
 }
@@ -172,14 +175,14 @@ void ClientConnect::handleProtocolPacket(const std::string& encryptedData)
     }
     else if (proto == "PROT3")
     {
-        if (parts.size() < 3)
+        if (parts.size() < 2)
         {
             addMessage("[Protocol error] Malformed PROT3");
             return;
         }
 
         const std::string& msgType = parts[1];
-        const std::string& payload = parts[2];
+        const std::string payload = parts.size() > 2 ? parts[2] : "";
 
         if (msgType == "userList")
         {
@@ -255,12 +258,14 @@ void ClientConnect::handleProtocolPacket(const std::string& encryptedData)
 
         if (status == "SUCCESS")
         {
+            isAccountAuthenticated = true;
             addMessage("[Account success] " + (parts.size() > 2 ? parts[2] : "Authenticated"));
         }
         else if (status == "FAIL")
         {
             std::string reason = (parts.size() > 2) ? parts[2] : "Unknown";
             addMessage("[Account failed] " + reason);
+            isAccountAuthenticated = false;
             isConnected = false;
             shutdown(clientSocket, SHUT_RDWR);
         } else
@@ -339,18 +344,63 @@ void ClientConnect::handleProtocolPacket(const std::string& encryptedData)
         }
         else if (parts[1] == "MESSAGE")
         {
-            if (parts.size() < 4) return;
+            if (parts.size() != 4 || !validBase64(parts[3])) {
+                addMessage("[Protocol error] Malformed PROT5 MESSAGE");
+                return;
+            }
             const std::string& targetRoomName = parts[2];
+            const std::string cipher = FreiaEncryption::base64_decode(parts[3]);
             std::lock_guard<std::mutex> lock(chatMutex);
-            for (auto& room : connectedChatRooms)
-                if (targetRoomName == room.getChatRoomName())
-                    room.addMessage(FreiaEncryption::decryptData(parts[3], room.getRoomKey()));
+            for (auto& room : connectedChatRooms) {
+                if (targetRoomName != room.getChatRoomName()) continue;
+                const std::string message = FreiaEncryption::decryptData(cipher, room.getRoomKey());
+                if (!message.empty()) room.addMessage(message);
+                break;
+            }
+        }
+        else if (parts[1] == "LEFT")
+        {
+            if (parts.size() < 3) return;
+            {
+                std::lock_guard<std::mutex> lock(chatMutex);
+                connectedChatRooms.erase(std::remove_if(connectedChatRooms.begin(),
+                    connectedChatRooms.end(), [&](const ChatRoom& room) {
+                        return room.getChatRoomName() == parts[2];
+                    }), connectedChatRooms.end());
+                pendingRoomPasswords.erase(parts[2]);
+            }
+            addMessage("[Room left] " + parts[2]);
+        }
+        else if (parts[1] == "ERROR")
+        {
+            if (parts.size() < 4) return;
+            {
+                std::lock_guard<std::mutex> lock(chatMutex);
+                pendingRoomPasswords.erase(parts[2]);
+            }
+            addMessage("[Room error] " + parts[2] + ": " + parts[3]);
         }
     }
     else
     {
         addMessage("[Unknown protocol] " + proto);
     }
+}
+
+// Reject invalid base64 before passing it to the existing decoder, which
+// assumes all input characters are in the base64 alphabet.
+bool ClientConnect::validBase64(const std::string& value)
+{
+    if (value.empty() || value.size() % 4 != 0 || value.size() > 32 * 1024) return false;
+    bool padding = false;
+    size_t equals = 0;
+    for (char c : value) {
+        if (c == '=') { padding = true; ++equals; }
+        else if (padding || !((c >= 'A' && c <= 'Z') ||
+                 (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') ||
+                  c == '+' || c == '/')) return false;
+    }
+    return equals <= 2;
 }
 
 // Split package by new line
@@ -427,11 +477,20 @@ uint16_t ClientConnect::safeParsePort(const std::string& s)
 // Send the package with the length of the package added as a prefix
 bool ClientConnect::sendWithLengthPrefix(int sock, const std::string& data)
 {
-    if (sock <= 0) return false;
+    if (sock <= 0 || data.empty() || data.size() > 64 * 1024) return false;
     uint32_t lenNet = htonl(static_cast<uint32_t>(data.size()));
-    if (send(sock, &lenNet, sizeof(lenNet), 0) != sizeof(lenNet)) return false;
-    if (send(sock, data.data(), data.size(), 0) != static_cast<ssize_t>(data.size())) return false;
-    return true;
+    auto sendAll = [sock](const char* bytes, size_t size) {
+        size_t sent = 0;
+        while (sent < size) {
+            ssize_t n = send(sock, bytes + sent, size - sent, MSG_NOSIGNAL);
+            if (n < 0 && errno == EINTR) continue;
+            if (n <= 0) return false;
+            sent += static_cast<size_t>(n);
+        }
+        return true;
+    };
+    return sendAll(reinterpret_cast<const char*>(&lenNet), sizeof(lenNet)) &&
+           sendAll(data.data(), data.size());
 }
 
 // ========================================
@@ -545,6 +604,10 @@ bool ClientConnect::connectToServer()
         addMessage("[Info] Sent PROT4 " + prot4Type + " request...");
     }
 
+    // The handshake is complete. Let the receiver block until data or shutdown.
+    timeval tv{};
+    setsockopt(clientSocket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+
     // Now safe to start background receive thread for normal messages
     receiveThread = std::thread(&ClientConnect::receiveMessages, this);
 
@@ -555,6 +618,7 @@ bool ClientConnect::connectToServer()
 void ClientConnect::disconnect()
 {
     isConnected = false;
+    isAccountAuthenticated = false;
     if (clientSocket >= 0)
         shutdown(clientSocket, SHUT_RDWR); // Wake the receiver before joining it.
     if (receiveThread.joinable() && receiveThread.get_id() != std::this_thread::get_id())
@@ -565,6 +629,9 @@ void ClientConnect::disconnect()
     }
     std::lock_guard<std::mutex> lock(chatMutex);
     pendingRoomPasswords.clear();
+    connectedChatRooms.clear();
+    onlineRooms.clear();
+    onlineUsers.clear();
 }
 
 // Receive messages from server
@@ -575,7 +642,7 @@ void ClientConnect::receiveMessages()
         // 1) Read length prefix
         uint32_t netLen = 0;
         int r = recv(clientSocket, &netLen, sizeof(netLen), MSG_WAITALL);
-        if (r <= 0)
+        if (r != static_cast<int>(sizeof(netLen)))
         {
             addMessage("[Disconnected from server]");
             isConnected = false;
@@ -594,7 +661,7 @@ void ClientConnect::receiveMessages()
         // 2) Read encryptedData payload
         std::string encryptedData(len, '\0');
         r = recv(clientSocket, encryptedData.data(), len, MSG_WAITALL);
-        if (r <= 0)
+        if (r != static_cast<int>(len))
         {
             addMessage("[Disconnected from server]");
             isConnected = false;
@@ -612,6 +679,7 @@ void ClientConnect::receiveMessages()
     }
 
     isConnected = false;
+    isAccountAuthenticated = false;
 }
 
 // Send message to server
@@ -700,33 +768,21 @@ std::string ClientConnect::buildProt4Frame() const
 // construct prot5 frame
 std::string ClientConnect::buildProt5Frame(const std::string& messageType, const ChatRoom& chatRoom)
 {
-    std::string prot5Frame = "PROT5\n";
-    if (messageType == "ROOMLIST")
-    {
-        prot5Frame += messageType + "\n";
-    }
-    else if (messageType == "CREATE")
-    {
-        FreiaEncryption::Key roomSessionKey = chatRoom.getRoomKey();
-        std::string roomKeyB64 = FreiaEncryption::base64_encode(std::string(reinterpret_cast<const char*>(roomSessionKey.data()), roomSessionKey.size()));
-        prot5Frame += messageType + "\n" + chatRoom.getChatRoomName() + "\n" + user + "\n" + roomKeyB64;
-
-        std::string prot5Cipher = FreiaEncryption::encryptData(prot5Frame, roomSessionKey);
-    }
-    else if (messageType == "CONNECT")
-    {
-        FreiaEncryption::Key roomSessionKey = chatRoom.getRoomKey();
-        std::string roomKeyB64 = FreiaEncryption::base64_encode(std::string(reinterpret_cast<const char*>(roomSessionKey.data()), roomSessionKey.size()));
-        prot5Frame += messageType + "\n" + chatRoom.getChatRoomName() + "\n" + user + "\n" + roomKeyB64;
-
-        std::string prot5Cipher = FreiaEncryption::encryptData(prot5Frame, roomSessionKey);
-    }
-    else
-    {
-        addMessage("[Info] Unknown PROT5 Message type");
-        return "UNKNOWN";
-    }
-    return prot5Frame;
+    if (messageType != "CREATE" && messageType != "CONNECT") return {};
+    const auto key = chatRoom.getRoomKey();
+    // Domain separation: the authentication token is NOT the room encryption
+    // key. The server can verify joins without receiving the AES room key.
+    constexpr char purpose[] = "FreiaThiwi/PROT5/room-login/v1";
+    unsigned char token[EVP_MAX_MD_SIZE];
+    unsigned int tokenLength = 0;
+    if (!HMAC(EVP_sha256(), key.data(), static_cast<int>(key.size()),
+              reinterpret_cast<const unsigned char*>(purpose), sizeof(purpose) - 1,
+              token, &tokenLength) || tokenLength != 32)
+        return {};
+    const std::string authToken = FreiaEncryption::base64_encode(
+        std::string(reinterpret_cast<const char*>(token), tokenLength));
+    return "PROT5\n" + messageType + "\n" + chatRoom.getChatRoomName() +
+           "\n" + user + "\n" + authToken;
 }
 
 // process prot5 room
@@ -800,44 +856,52 @@ bool ClientConnect::processProt5Room(
 }
 
 // Create prot5 message
-std::string ClientConnect::createProt5Message(ChatRoom& room, const std::string& text)
+std::string ClientConnect::createProt5Message(ChatRoom& room, const std::string& encrypted)
 {
-    std::string frame = "PROT5\n";
-    frame += "MESSAGE\n";
-    frame += room.getChatRoomName();
-    frame += '\n';
-    frame += std::to_string(text.size()); // ciphertext size
-    frame += '\n';
-    frame += text;
-    return frame;
+    // Inner ciphertext must be encoded: encrypted bytes can contain '\n'.
+    return "PROT5\nMESSAGE\n" + room.getChatRoomName() + "\n" +
+           FreiaEncryption::base64_encode(encrypted);
 }
 
 // ========================================
 // Chatroom functions
 // ========================================
 
-// Create a room
-void ClientConnect::createRoom(std::string chatRoomName, std::string chatRoomPassword)
+// The server creates the room AND immediately joins its creator. The pending
+// password is retained locally for the incoming ROOM packet and E2EE key.
+bool ClientConnect::createRoom(std::string chatRoomName, std::string chatRoomPassword)
 {
-    ChatRoom chatRoom(chatRoomName, chatRoomPassword);
-    std::string prot5Frame = buildProt5Frame("CREATE", chatRoom);
-    std::string transportCipher = FreiaEncryption::encryptData(prot5Frame, serverSessionKey);
-
-    sendWithLengthPrefix(clientSocket, transportCipher);
-
+    if (!isConnected || !isAccountAuthenticated ||
+        !Validation::isValidChatRoomName(chatRoomName) ||
+        !Validation::isValidPassword(chatRoomPassword)) return false;
+    ChatRoom room(chatRoomName, chatRoomPassword);
+    std::string frame = buildProt5Frame("CREATE", room);
+    if (frame.empty()) return false;
+    std::string ciphertext = FreiaEncryption::encryptData(frame, serverSessionKey);
+    if (ciphertext.empty()) return false;
     {
         std::lock_guard<std::mutex> lock(chatMutex);
-        chatRooms.push_back(chatRoom);
+        pendingRoomPasswords[chatRoomName] = chatRoomPassword;
     }
+    if (!sendWithLengthPrefix(clientSocket, ciphertext)) {
+        std::lock_guard<std::mutex> lock(chatMutex);
+        pendingRoomPasswords.erase(chatRoomName);
+        return false;
+    }
+    addMessage("[Room] Creation requested for " + chatRoomName);
+    return true;
 }
 
 // Connect to a room with password
 bool ClientConnect::connectToRoom(std::string chatRoomName, std::string chatRoomPassword)
 {
-    if (!isConnected) return false;
+    if (!isConnected || !isAccountAuthenticated ||
+        !Validation::isValidChatRoomName(chatRoomName) ||
+        !Validation::isValidPassword(chatRoomPassword)) return false;
 
     ChatRoom room(chatRoomName, chatRoomPassword);
     std::string prot5Frame = buildProt5Frame("CONNECT", room);
+    if (prot5Frame.empty()) return false;
     std::string transportCipher = FreiaEncryption::encryptData(prot5Frame, serverSessionKey);
     if (transportCipher.empty()) return false;
 
@@ -866,7 +930,7 @@ void ClientConnect::sendMessageToRoom(const std::string& roomName, const std::st
     if (room == rooms.end()) return;
 
     std::string message = user + ": " + text;
-    if (!isConnected || message.empty())
+    if (!isConnected || !isAccountAuthenticated || message.empty())
         return;
     
     if (message.size() > 16384)
@@ -899,6 +963,18 @@ void ClientConnect::sendMessageToRoom(const std::string& roomName, const std::st
     }
 
     return;
+}
+
+bool ClientConnect::leaveRoom(const std::string& roomName)
+{
+    if (!isConnected || !isAccountAuthenticated) return false;
+    const auto rooms = getConnectedChatRooms();
+    if (std::none_of(rooms.begin(), rooms.end(), [&](const ChatRoom& room) {
+            return room.getChatRoomName() == roomName;
+        })) return false;
+    const std::string frame = "PROT5\nLEAVE\n" + roomName;
+    const std::string cipher = FreiaEncryption::encryptData(frame, serverSessionKey);
+    return !cipher.empty() && sendWithLengthPrefix(clientSocket, cipher);
 }
 
 bool ClientConnect::processProt5Users(const std::vector<std::string>& parts, std::string& roomName, std::vector<std::string>& connectedUsers)
