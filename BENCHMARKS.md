@@ -175,13 +175,74 @@ The sustained 20-user run met the proposed targets for delivery integrity, CPU, 
 
 The manual two-client workload did not record message counts, exact sizes, traffic rate or delivery latency. The automated workloads provide controlled message rates and verified deliveries, but the 50-user result shows that tail latency can become unacceptable even with complete delivery. Further testing should investigate the source of intermittent delays and include longer runs, multiple rooms, cold-start comparisons and concurrent authentication under traffic.
 
-Freia Thiwi targets small, independently hosted groups, rather than a city-scale centralized service. These results demonstrate practical performance on the tested 2009 laptop. They do not establish universal minimum requirements. A 32-bit machine from around 2000 (Celeron-chan, 651 MHz, 384 MB RAM) remains an experimental compatibility target; it has **not yet** run Freia Thiwi.
+Freia Thiwi targets small, independently hosted groups, rather than a city-scale centralized service. These results demonstrate practical performance on the tested 2009 laptop. They do not establish universal minimum requirements. The next experimental compatibility target is Celeron-chan, described below. Its Linux environment is now operational, but Freia Thiwi has **not yet** been built or run on it.
+
+## Celeron-chan — experimental legacy hardware target (circa 2000)
+
+**Status (28 November 2026): operating system and test environment verified; Freia Thiwi testing pending.** Initial compatibility testing is planned for 29 November 2026. No Freia Thiwi executable has yet been built or run on this machine, and no server or graphical-client performance results are available.
+
+Following the measured Hazuki benchmarks, Celeron-chan is the next step in exploring the lower hardware limits of the project. This is a genuine early-2000s physical computer, not an emulator, virtual machine or artificially resource-limited modern system. The objective is to determine whether the normal v0.6.0 server can operate on a 32-bit, pre-SSE2 processor without disabling features or reducing cryptographic parameters.
+
+### Verified hardware and software configuration
+
+| Component | Configuration |
+|---|---|
+| System | Desktop PC from around 2000; retained in service as a retro CD player and experimental test bed |
+| CPU | Intel Pentium III (Coppermine), as reported by Linux; 651.459 MHz, 1 core / 1 thread; historically known as Celeron-chan |
+| CPU identification | Family 6, model 8, stepping 6; 256 KiB reported cache; exact retail CPU model not independently confirmed |
+| Architecture | 32-bit x86 (`i686`); MMX and SSE; no SSE2, AVX or AES-NI |
+| RAM | 384 MiB installed; 367 MiB reported usable by Linux |
+| Storage | Separate 200 GB nominal mechanical HDD (186.31 GiB); ext3 filesystem of approximately 4 GiB; original Windows XP disk retained separately |
+| OS / kernel | Tiny Core Linux CorePlus 17.1 (x86); Linux `6.18.35-tinycore`, built 19 June 2026 |
+| Desktop | Xvesa / FLWM; responsive during initial interactive use (qualitative observation) |
+| Swap | 80 MiB zram (priority -2) + 1,024 MiB HDD swap file (priority -3); 1,104 MiB total as reported by `free -m` |
+| Network | Wired Ethernet; remote OpenSSH login from Marilyn verified after reboot |
+| Build tools / libraries | C++ compiler, CMake and required development libraries not yet validated; OpenSSL runtime extension loaded for SSH |
+| Freia Thiwi build | Pending; target release `v0.6.0` |
+
+### Operating system baseline — 28 November 2026
+
+The installed system booted directly from the HDD without the installation CD. The following snapshot was taken with the graphical desktop and OpenSSH available, immediately after a successful reboot and remote login. These are **whole-system memory figures before installing the development toolchain or starting Freia Thiwi**, not server process measurements.
+
+| Metric (`free -m`) | Observed value |
+|---|---:|
+| Total usable RAM | 367 MiB |
+| Used RAM | 34 MiB |
+| Free RAM | 255 MiB |
+| Shared RAM | 23 MiB |
+| Buffers / cache | 79 MiB |
+| Available RAM | 299 MiB |
+| Configured swap | 1,104 MiB |
+| Swap used | 0 MiB |
+
+Persistent hostname, SSH access and both swap devices were verified after reboot. The desktop remained responsive during initial use. These observations establish a working Linux environment, not compatibility with the Freia Thiwi application or its dependencies.
+
+### Planned compatibility and benchmark procedure
+
+1. Verify that the C++ toolchain, CMake, OpenSSL and SQLite dependencies support the processor's actual instruction set. Record versions, build flags and the exact source revision.
+2. Attempt a native Release build of the normal server (`-j1`); record build success or failure, duration, memory/swap use, executable size and architecture. If cross-compilation is required, document it separately.
+3. Start the server with a disposable database; measure idle RSS, PSS/USS where available, CPU usage, process threads and swap. Verify account creation/login, room creation/joining, encrypted messaging, membership updates, reconnects and persisted encrypted history from external clients.
+4. Generate controlled traffic from a separate LAN workstation with synthetic accounts and messages. Begin with two users, then increase to five and ten if stable. Attempt Hazuki's sustained 20-user workload only if the smaller runs justify it. Use one room, 256-byte message bodies and one submission per second per user for comparable workloads; record actual durations and any timeout changes.
+5. Record verified peer deliveries and sender echoes, missing/duplicate/invalid deliveries, disconnects, setup/authentication times, end-to-end latency (median, p95, p99 and maximum), CPU, RSS, disk I/O, system I/O wait and swap activity using the tools available on Tiny Core. Report incomplete or failed runs as such.
+
+No weaker encryption, reduced key derivation work factors or security-related shortcuts will be introduced to achieve compatibility. Any required portability changes will be documented along with their exact revision. The graphical client is not assumed to run on Celeron-chan; its graphics and CPU requirements must be assessed separately. This experiment is not a security audit, production deployment recommendation or claim of minimum supported hardware.
+
+### Results
+
+| Test | Status |
+|---|---|
+| Linux HDD boot, desktop, network and persistent SSH/swap | Verified |
+| Native Freia Thiwi v0.6.0 build | Pending |
+| Server startup and idle measurements | Pending |
+| End-to-end encrypted communication | Pending |
+| Automated load and latency measurements | Pending |
+| Graphical client compatibility | Not tested |
 
 ## Other hardware targets
 
 | System | Status |
 |---|---|
 | Yuriko — Dell OptiPlex 780 | Planned; no benchmark results yet |
-| Celeron-chan — 651 MHz Celeron, 384 MB RAM | Experimental 32-bit compatibility target; no benchmark results yet |
+| Celeron-chan — 651 MHz Coppermine, 384 MiB RAM | Linux environment verified; experimental 32-bit server testing pending (see above) |
 
 Future hardware and release results can be added here without expanding the main README.
